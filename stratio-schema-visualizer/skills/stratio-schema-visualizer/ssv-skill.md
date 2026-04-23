@@ -24,8 +24,9 @@ If they give a partial name or keyword instead of an exact name, call `stratio_d
 For the selected domain, make these calls (run in parallel when possible):
 
 ```
-stratio_data-list_domain_tables(domain_name)        → list of table names
-stratio_data-get_tables_details(domain_name, ALL)   → descriptions, business context
+stratio_data-list_domain_tables(domain_name)           → list of table names
+stratio_data-get_tables_details(domain_name, ALL)      → descriptions, business context
+stratio_data-get_tables_quality_details(domain_name)   → quality scores per table
 ```
 
 Then for **each table**, call:
@@ -36,6 +37,8 @@ stratio_data-get_table_columns_details(domain_name, table_name)  → columns, ty
 If there are more than 12 tables, process in batches of 6 using parallel subagents to avoid timeouts.
 
 If a table fails (permissions, timeout), skip it gracefully and note which ones were skipped at the end.
+
+Extract the quality score for each table from `get_tables_quality_details`. The score is a number 0–100 representing data quality percentage. If the call fails or a table has no score, set `quality_score: null`.
 
 ### Step 3 — Build the data structure
 
@@ -49,6 +52,7 @@ Assemble a JSON object in this exact shape and write it to `/tmp/stratio_schema_
     {
       "name": "table_name",
       "description": "Business description from governance (empty string if none)",
+      "quality_score": 85,
       "columns": [
         {
           "name": "column_name",

@@ -246,6 +246,13 @@ header {
   padding: 1px 6px;
   font-weight: 600;
 }
+.quality-badge {
+  flex-shrink: 0; font-size: 9px; font-weight: 700;
+  border-radius: 8px; padding: 1px 6px;
+}
+.quality-green  { background: rgba(34,197,94,.25);  color: #4ade80; }
+.quality-yellow { background: rgba(234,179,8,.25);  color: #facc15; }
+.quality-red    { background: rgba(239,68,68,.25);  color: #f87171; }
 
 /* Column rows */
 .crow {
@@ -292,6 +299,166 @@ header {
 .ctype.t-bool { color: #6b21a8; background: #f3e8ff; }
 .ctype.t-date { color: #9f1239; background: #ffe4e6; }
 .ctype.t-unk  { color: var(--text3); background: var(--surface2); }
+
+/* ── Filter bar ── */
+#filter-bar {
+  height: 36px; flex-shrink: 0;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 16px; gap: 8px; z-index: 19;
+}
+.filter-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .5px; color: var(--text3); margin-right: 2px; white-space: nowrap;
+}
+.ftoggle {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--text3);
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: 14px; padding: 3px 10px;
+  cursor: pointer; user-select: none;
+  transition: background .12s, border-color .12s, color .12s;
+  font-family: 'Inter', sans-serif;
+}
+.ftoggle.active { background: var(--action6-lo); border-color: var(--action6); color: var(--action6); }
+.ftoggle-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--border2); flex-shrink: 0;
+  transition: background .12s;
+}
+.ftoggle.active .ftoggle-dot { background: var(--action6); }
+
+/* Filter visibility effects */
+body.hide-types   .ctype                    { display: none !important; }
+body.hide-nonkey  .crow:not(.pk):not(.fk)  { display: none !important; }
+body.hide-unverified .unverified-rel        { display: none !important; }
+
+/* ── Domain Summary panel ── */
+#summary-panel {
+  position: fixed; top: 92px; left: 0; bottom: 0;
+  width: 300px; z-index: 100;
+  background: var(--white);
+  border-right: 1px solid var(--border);
+  box-shadow: 4px 0 16px rgba(15,27,39,.10);
+  display: flex; flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform .22s ease;
+}
+#summary-panel.open { transform: translateX(0); }
+.sp-header {
+  padding: 13px 16px 11px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.sp-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.sp-close {
+  background: none; border: none; cursor: pointer;
+  font-size: 15px; color: var(--text3); padding: 0; line-height: 1;
+}
+.sp-close:hover { color: var(--text); }
+.sp-body { flex: 1; overflow-y: auto; padding: 14px; }
+.sp-intro {
+  font-size: 12px; color: var(--text2); line-height: 1.6;
+  padding: 10px 12px; background: var(--action6-lo);
+  border-radius: 6px; margin-bottom: 14px;
+  border-left: 3px solid var(--action6);
+}
+.sp-intro b { color: var(--text); }
+.sp-section { margin-bottom: 16px; }
+.sp-section-title {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .6px; color: var(--text3); margin-bottom: 8px;
+}
+.sp-central {
+  padding: 10px 12px; border-radius: 8px;
+  background: var(--space17); color: var(--white);
+}
+.sp-tname-lg {
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 13px; font-weight: 700; margin-bottom: 4px;
+}
+.sp-conn-badge {
+  display: inline-block; font-size: 10px; font-weight: 700;
+  background: var(--action6); color: var(--white);
+  border-radius: 10px; padding: 1px 8px; margin-bottom: 6px;
+}
+.sp-entity {
+  padding: 7px 10px; border-radius: 6px;
+  border: 1px solid var(--border); margin-bottom: 5px;
+}
+.sp-tname {
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 11px; font-weight: 600; color: var(--text); margin-bottom: 2px;
+}
+.sp-tdesc { font-size: 11px; color: var(--text2); line-height: 1.4; }
+.sp-tdesc em { color: var(--text3); font-style: italic; }
+.sp-rel {
+  padding: 6px 10px; border-radius: 6px;
+  background: var(--surface); margin-bottom: 5px; font-size: 11px;
+}
+.sp-rel-from { font-weight: 600; color: var(--action6); font-family: 'SFMono-Regular', Consolas, monospace; }
+.sp-rel-arrow { color: var(--text3); margin: 0 2px; }
+.sp-rel-to   { font-weight: 600; color: var(--text);    font-family: 'SFMono-Regular', Consolas, monospace; }
+.sp-rel-col  { font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+/* ── Schema Health panel ── */
+#health-panel {
+  position: fixed; top: 92px; right: 0; bottom: 0;
+  width: 290px; z-index: 100;
+  background: var(--white);
+  border-left: 1px solid var(--border);
+  box-shadow: -4px 0 16px rgba(15,27,39,.10);
+  display: flex; flex-direction: column;
+  transform: translateX(100%);
+  transition: transform .22s ease;
+}
+#health-panel.open { transform: translateX(0); }
+.hp-header {
+  padding: 13px 16px 11px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.hp-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.hp-close {
+  background: none; border: none; cursor: pointer;
+  font-size: 15px; color: var(--text3); padding: 0; line-height: 1;
+}
+.hp-close:hover { color: var(--text); }
+.hp-body { flex: 1; overflow-y: auto; padding: 12px 14px; }
+.hp-section { margin-bottom: 14px; }
+.hp-section-title {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .6px; color: var(--text3); margin-bottom: 7px;
+}
+.hp-item {
+  padding: 7px 10px; border-radius: 6px;
+  border-left: 3px solid #f59e0b;
+  background: var(--surface); margin-bottom: 5px; line-height: 1.4;
+}
+.hp-item.info { border-color: var(--action6); }
+.hp-tname {
+  font-weight: 600; color: var(--text);
+  font-family: 'SFMono-Regular', Consolas, monospace; font-size: 11px;
+}
+.hp-msg { color: var(--text2); font-size: 11px; margin-top: 2px; }
+.hp-empty {
+  color: var(--text3); font-size: 12px;
+  text-align: center; padding: 32px 0;
+}
+.hp-ok { color: #16a34a; font-size: 22px; display: block; margin-bottom: 6px; }
+.hp-summary {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  padding-bottom: 12px; margin-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.hp-pill {
+  font-size: 10px; font-weight: 700; border-radius: 10px;
+  padding: 2px 8px; white-space: nowrap;
+}
+.hp-pill.warn { background: #fef3c7; color: #92400e; }
+.hp-pill.info { background: #eff6ff; color: #1d4ed8; }
 
 /* ── Tooltip ── */
 #tip {
@@ -340,18 +507,38 @@ header {
     <img src="__LOGO_SRC__" alt="Stratio">
   </div>
   <div class="header-divider"></div>
-  <div class="header-title">Esquema relacional · __DOMAIN_LABEL__</div>
+  <div class="header-title"><span data-i18n="header-prefix">Esquema relacional</span> · __DOMAIN_LABEL__</div>
   <div class="header-divider"></div>
   <div class="domain-chip">__DOMAIN__</div>
   <div class="hstats">
-    <div class="hstat"><b>__TABLE_COUNT__</b> tables</div>
-    <div class="hstat"><b>__COL_COUNT__</b> columns</div>
-    <div class="hstat"><b>__REL_COUNT__</b> relationships</div>
+    <div class="hstat"><b>__TABLE_COUNT__</b> <span data-i18n="hstat-tables">tablas</span></div>
+    <div class="hstat"><b>__COL_COUNT__</b> <span data-i18n="hstat-cols">columnas</span></div>
+    <div class="hstat"><b>__REL_COUNT__</b> <span data-i18n="hstat-rels">relaciones</span></div>
     <div class="sep"></div>
-    <button class="hbtn" onclick="resetLayout()">&#8635; Reset</button>
-    <button class="hbtn" onclick="fitView()">&#8862; Fit</button>
+    <button class="hbtn" data-i18n="btn-summary" onclick="toggleSummaryPanel()">&#128218; Resumen</button>
+    <button class="hbtn" data-i18n="btn-reset" onclick="resetLayout()">&#8635; Restablecer</button>
+    <button class="hbtn" data-i18n="btn-fit" onclick="fitView()">&#8862; Ajustar</button>
+    <button class="hbtn" data-i18n="btn-health" id="health-btn" onclick="toggleHealthPanel()">&#9874; Salud del esquema</button>
+    <button class="hbtn" data-i18n="btn-export" onclick="exportPNG()">&#8659; Exportar PNG</button>
+    <button class="hbtn" id="lang-btn" onclick="toggleLang()">&#127468;&#127463; English</button>
   </div>
 </header>
+
+<div id="filter-bar">
+  <span class="filter-label" data-i18n="filter-label">Mostrar:</span>
+  <button class="ftoggle active" id="ft-types" onclick="toggleFilter('types')">
+    <span class="ftoggle-dot"></span><span data-i18n="filter-types">Tipos de dato</span>
+  </button>
+  <button class="ftoggle active" id="ft-nonkey" onclick="toggleFilter('nonkey')">
+    <span class="ftoggle-dot"></span><span data-i18n="filter-nonkey">Columnas no clave</span>
+  </button>
+  <button class="ftoggle active" id="ft-descs" onclick="toggleFilter('descs')">
+    <span class="ftoggle-dot"></span><span data-i18n="filter-descs">Descripciones</span>
+  </button>
+  <button class="ftoggle active" id="ft-unverified" onclick="toggleFilter('unverified')">
+    <span class="ftoggle-dot"></span><span data-i18n="filter-unverified">Relaciones sin verificar</span>
+  </button>
+</div>
 
 <div id="wrap">
   <div id="canvas">
@@ -360,10 +547,26 @@ header {
 </div>
 
 <div id="legend">
-  <div class="leg-title">Legend</div>
-  <div class="leg-row"><div class="l-box"></div> Table</div>
-  <div class="leg-row"><div class="l-pk"></div> Primary key</div>
-  <div class="leg-row"><div class="l-line"></div> Inferred FK</div>
+  <div class="leg-title" data-i18n="legend-title">Leyenda</div>
+  <div class="leg-row"><div class="l-box"></div> <span data-i18n="legend-table">Tabla</span></div>
+  <div class="leg-row"><div class="l-pk"></div> <span data-i18n="legend-pk">Clave primaria</span></div>
+  <div class="leg-row"><div class="l-line"></div> <span data-i18n="legend-fk">FK inferida</span></div>
+</div>
+
+<div id="summary-panel">
+  <div class="sp-header">
+    <span class="sp-title" data-i18n="sum-title">Resumen del dominio</span>
+    <button class="sp-close" onclick="toggleSummaryPanel()">&#10005;</button>
+  </div>
+  <div class="sp-body" id="sp-body"></div>
+</div>
+
+<div id="health-panel">
+  <div class="hp-header">
+    <span class="hp-title" data-i18n="hp-title">&#9874; Salud del esquema</span>
+    <button class="hp-close" onclick="toggleHealthPanel()">&#10005;</button>
+  </div>
+  <div class="hp-body" id="hp-body"></div>
 </div>
 
 <div id="tip"></div>
@@ -383,6 +586,171 @@ const svg    = document.getElementById('svg-layer');
 const wrap   = document.getElementById('wrap');
 const tip    = document.getElementById('tip');
 const NS     = 'http://www.w3.org/2000/svg';
+
+/* ── i18n ── */
+let LANG = 'es';
+const I18N = {
+  static: {
+    'header-prefix': { es: 'Esquema relacional',        en: 'Relational schema' },
+    'hstat-tables':  { es: 'tablas',                    en: 'tables' },
+    'hstat-cols':    { es: 'columnas',                  en: 'columns' },
+    'hstat-rels':    { es: 'relaciones',                en: 'relationships' },
+    'btn-reset':     { es: '&#8635; Restablecer',       en: '&#8635; Reset' },
+    'btn-fit':       { es: '&#8862; Ajustar',           en: '&#8862; Fit' },
+    'btn-health':    { es: '&#9874; Salud del esquema', en: '&#9874; Schema Health' },
+    'btn-export':    { es: '&#8659; Exportar PNG',      en: '&#8659; Export PNG' },
+    'legend-title':  { es: 'Leyenda',                   en: 'Legend' },
+    'legend-table':  { es: 'Tabla',                     en: 'Table' },
+    'legend-pk':     { es: 'Clave primaria',            en: 'Primary key' },
+    'legend-fk':     { es: 'FK inferida',               en: 'Inferred FK' },
+    'hp-title':      { es: '&#9874; Salud del esquema', en: '&#9874; Schema Health' },
+    'hp-empty':      { es: '&#10003; Sin problemas detectados', en: '&#10003; No issues found' },
+    'exporting':         { es: 'Exportando…',             en: 'Exporting…' },
+    'btn-summary':       { es: '&#128218; Resumen',        en: '&#128218; Summary' },
+    'sum-title':         { es: 'Resumen del dominio',     en: 'Domain summary' },
+    'sum-entities':      { es: 'Entidades',               en: 'Entities' },
+    'sum-central':       { es: 'Entidad central',         en: 'Central entity' },
+    'sum-relations':     { es: 'Relaciones',              en: 'Relationships' },
+    'sum-connections':   { es: 'conexiones',              en: 'connections' },
+    'sum-no-desc':       { es: 'Sin descripción de governance.', en: 'No governance description.' },
+    'sum-via':           { es: 'vía',                     en: 'via' },
+    'filter-label':      { es: 'Mostrar:',               en: 'Show:' },
+    'filter-types':      { es: 'Tipos de dato',          en: 'Data types' },
+    'filter-nonkey':     { es: 'Columnas no clave',      en: 'Non-key columns' },
+    'filter-descs':      { es: 'Descripciones',          en: 'Descriptions' },
+    'filter-unverified': { es: 'Relaciones sin verificar', en: 'Unverified relations' },
+  },
+  groups: {
+    'no-pk':      { es: 'Clave primaria ausente',               en: 'Missing Primary Key' },
+    'no-rel':     { es: 'Tablas aisladas',                      en: 'Isolated Tables' },
+    'unverified': { es: 'Cardinalidad no verificada',           en: 'Unverified Cardinality' },
+    'no-desc':    { es: 'Descripciones de governance ausentes', en: 'Missing Governance Descriptions' },
+  },
+  issues: {
+    'no-pk':  { es: 'Sin clave primaria definida', en: 'No primary key defined' },
+    'no-rel': { es: 'Sin relaciones detectadas',   en: 'No relationships detected' },
+    'no-desc': {
+      es: p => `${p.n} columna${p.n>1?'s':''} sin descripción de governance`,
+      en: p => `${p.n} column${p.n>1?'s':''} without governance description`,
+    },
+    'unverified': {
+      es: p => `Cardinalidad con ${p.to} no verificada (${p.fc} → ${p.tc})`,
+      en: p => `Cardinality with ${p.to} not verified (${p.fc} → ${p.tc})`,
+    },
+  },
+};
+
+const I18N_DYN = {
+  'sum-intro': {
+    es: p => `El dominio <b>${p.d}</b> contiene <b>${p.nt}</b> entidad${p.nt!==1?'es':''} relacionadas a través de <b>${p.nr}</b> relación${p.nr!==1?'es':''}.`,
+    en: p => `Domain <b>${p.d}</b> has <b>${p.nt}</b> entr${p.nt!==1?'ies':'y'} linked through <b>${p.nr}</b> relationship${p.nr!==1?'s':''}.`,
+  },
+};
+
+function ts(key)      { return I18N.static[key][LANG]; }
+function tg(type)     { return I18N.groups[type][LANG]; }
+function ti(type, p)  { const m = I18N.issues[type][LANG]; return typeof m === 'function' ? m(p) : m; }
+function td(key, p)   { return I18N_DYN[key][LANG](p); }
+
+function applyLang() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (I18N.static[key]) el.innerHTML = ts(key);
+  });
+}
+
+/* ── Filters ── */
+const FILTERS = { types: true, nonkey: true, descs: true, unverified: true };
+
+function toggleFilter(key) {
+  FILTERS[key] = !FILTERS[key];
+  document.getElementById('ft-' + key).classList.toggle('active', FILTERS[key]);
+  document.body.classList.toggle('hide-' + key, !FILTERS[key]);
+  if (key === 'descs' && !FILTERS.descs) tip.style.display = 'none';
+}
+
+function toggleLang() {
+  LANG = LANG === 'es' ? 'en' : 'es';
+  document.getElementById('lang-btn').innerHTML =
+    LANG === 'es' ? '&#127468;&#127463; English' : '&#127466;&#127480; Español';
+  applyLang();
+  renderHealthPanel();
+  renderSummaryPanel();
+}
+
+/* ── Domain Summary ── */
+function shortDesc(desc) {
+  if (!desc) return null;
+  const lines = desc.split('\n')
+    .map(l => l.replace(/^#+\s*/,'').replace(/\*\*/g,'').replace(/^\*\s*/,'').replace(/\*/g,'').trim())
+    .filter(l => l.length > 15 && !/^[*#]/.test(l));
+  if (!lines.length) return null;
+  const first = lines[0];
+  const dot = first.indexOf('.');
+  return (dot > 20 ? first.substring(0, dot) : first.substring(0, 150)).trim();
+}
+
+function renderSummaryPanel() {
+  const body = document.getElementById('sp-body');
+  const nt = DATA.tables.length, nr = DATA.relationships.length;
+
+  // Connection count per table
+  const conns = {};
+  DATA.tables.forEach(t => { conns[t.name] = 0; });
+  DATA.relationships.forEach(r => {
+    conns[r.from_table] = (conns[r.from_table]||0) + 1;
+    conns[r.to_table]   = (conns[r.to_table]  ||0) + 1;
+  });
+
+  // Central entity: most connections
+  const central = DATA.tables.reduce((best, t) =>
+    (conns[t.name]||0) > (conns[best.name]||0) ? t : best, DATA.tables[0]);
+
+  // Intro
+  let html = `<p class="sp-intro">${td('sum-intro', {d: DATA.domain, nt, nr})}</p>`;
+
+  // Central entity
+  const cd = shortDesc(central.description);
+  html += `<div class="sp-section">
+    <div class="sp-section-title">${ts('sum-central')}</div>
+    <div class="sp-central">
+      <div class="sp-tname-lg">${esc(central.name)}</div>
+      <div class="sp-conn-badge">${conns[central.name]} ${ts('sum-connections')}</div>
+      ${cd ? `<div class="sp-tdesc" style="color:rgba(255,255,255,.7);margin-top:4px">${esc(cd)}</div>` : ''}
+    </div>
+  </div>`;
+
+  // All entities
+  html += `<div class="sp-section"><div class="sp-section-title">${ts('sum-entities')} (${nt})</div>`;
+  DATA.tables.forEach(t => {
+    const d = shortDesc(t.description);
+    html += `<div class="sp-entity">
+      <div class="sp-tname">${esc(t.name)}</div>
+      <div class="sp-tdesc">${d ? esc(d) : `<em>${ts('sum-no-desc')}</em>`}</div>
+    </div>`;
+  });
+  html += '</div>';
+
+  // Relationships
+  if (nr > 0) {
+    html += `<div class="sp-section"><div class="sp-section-title">${ts('sum-relations')} (${nr})</div>`;
+    DATA.relationships.forEach(r => {
+      html += `<div class="sp-rel">
+        <span class="sp-rel-from">${esc(r.from_table)}</span>
+        <span class="sp-rel-arrow"> → </span>
+        <span class="sp-rel-to">${esc(r.to_table)}</span>
+        <div class="sp-rel-col">${ts('sum-via')} ${esc(r.from_column)} → ${esc(r.to_column)}</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  body.innerHTML = html;
+}
+
+function toggleSummaryPanel() {
+  document.getElementById('summary-panel').classList.toggle('open');
+}
 
 /* ── Lookup structures ── */
 const byName = {};
@@ -440,8 +808,13 @@ function renderCards() {
 
     /* header */
     const hdr = el('div', { class: 'thead', title: t.description || t.name });
+    const qScore = (t.quality_score != null) ? Number(t.quality_score) : null;
+    const qBadge = qScore != null
+      ? `<span class="quality-badge ${qScore >= 80 ? 'quality-green' : qScore >= 40 ? 'quality-yellow' : 'quality-red'}">${qScore}%</span>`
+      : '';
     hdr.innerHTML = `<span class="thead-icon">&#9634;</span>
       <span class="thead-name">${esc(t.name)}</span>
+      ${qBadge}
       <span class="thead-count">${t.columns.length}</span>`;
     card.appendChild(hdr);
 
@@ -480,8 +853,11 @@ function typeClass(t) {
 
 /* ── Tooltip ── */
 function attachTooltip(rowEl, text) {
-  rowEl.addEventListener('mouseenter', e => { tip.textContent = text; tip.style.display = 'block'; moveTooltip(e); });
-  rowEl.addEventListener('mousemove',  moveTooltip);
+  rowEl.addEventListener('mouseenter', e => {
+    if (!FILTERS.descs) return;
+    tip.textContent = text; tip.style.display = 'block'; moveTooltip(e);
+  });
+  rowEl.addEventListener('mousemove', e => { if (FILTERS.descs) moveTooltip(e); });
   rowEl.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
 }
 function moveTooltip(e) {
@@ -596,17 +972,20 @@ function drawArrows() {
       if (tgtRow) tgtRow.classList.remove('rel-hi');
     });
 
-    svg.appendChild(path);
-    svg.appendChild(hit);
-    svg.appendChild(d1);
-    svg.appendChild(d2);
     /* Cardinality badges — driven by verified data, never hardcoded */
     const card = r.cardinality || '?';
     const srcLabel = (card === '1:1') ? '1' : (card === 'N:1') ? 'N' : '?';
     const tgtLabel = (card === '?')   ? '?' : '1';
     const unknown  = (card === '?');
-    svg.appendChild(cardBadge(from.x, from.y, fSide, srcLabel, unknown));
-    svg.appendChild(cardBadge(to.x,   to.y,   tSide, tgtLabel, unknown));
+
+    const relGroup = svgEl('g', { class: unknown ? 'unverified-rel' : '' });
+    relGroup.appendChild(path);
+    relGroup.appendChild(hit);
+    relGroup.appendChild(d1);
+    relGroup.appendChild(d2);
+    relGroup.appendChild(cardBadge(from.x, from.y, fSide, srcLabel, unknown));
+    relGroup.appendChild(cardBadge(to.x,   to.y,   tSide, tgtLabel, unknown));
+    svg.appendChild(relGroup);
   });
 }
 
@@ -672,11 +1051,109 @@ function fitView() {
   wrap.scrollTop  = Math.max(0, (minY - PAD) - (ch - bh) / 2);
 }
 
+/* ── Schema Health ── */
+function buildIssues() {
+  const issues = [];
+  const tablesInRels = new Set();
+  DATA.relationships.forEach(r => {
+    tablesInRels.add(r.from_table);
+    tablesInRels.add(r.to_table);
+  });
+
+  DATA.tables.forEach(t => {
+    if (!t.columns.some(c => c.is_primary_key))
+      issues.push({ type: 'no-pk', table: t.name, params: {} });
+
+    const n = t.columns.filter(c => !c.description || !c.description.trim()).length;
+    if (n > 0)
+      issues.push({ type: 'no-desc', table: t.name, params: { n } });
+
+    if (!tablesInRels.has(t.name))
+      issues.push({ type: 'no-rel', table: t.name, params: {} });
+  });
+
+  DATA.relationships.forEach(r => {
+    if (r.cardinality === '?')
+      issues.push({ type: 'unverified', table: r.from_table,
+        params: { to: r.to_table, fc: r.from_column, tc: r.to_column } });
+  });
+
+  return issues;
+}
+
+function renderHealthPanel() {
+  const issues = buildIssues();
+  const body   = document.getElementById('hp-body');
+  const btn    = document.getElementById('health-btn');
+  const GROUPS = ['no-pk', 'no-rel', 'unverified', 'no-desc'];
+
+  // Update button badge
+  const badge = `<span style="background:rgba(245,158,11,.3);border-radius:8px;padding:1px 6px;font-size:10px">${issues.length}</span>`;
+  btn.innerHTML = issues.length > 0 ? `${ts('btn-health')} ${badge}` : ts('btn-health');
+
+  if (issues.length === 0) {
+    body.innerHTML = `<div class="hp-empty"><span class="hp-ok">&#10003;</span>${ts('hp-empty')}</div>`;
+    return;
+  }
+
+  let html = '<div class="hp-summary">';
+  GROUPS.forEach(type => {
+    const n = issues.filter(i => i.type === type).length;
+    if (n) html += `<span class="hp-pill warn">${tg(type)}: ${n}</span>`;
+  });
+  html += '</div>';
+
+  GROUPS.forEach(type => {
+    const items = issues.filter(i => i.type === type);
+    if (!items.length) return;
+    html += `<div class="hp-section"><div class="hp-section-title">${tg(type)} (${items.length})</div>`;
+    items.forEach(i => {
+      html += `<div class="hp-item"><div class="hp-tname">${esc(i.table)}</div><div class="hp-msg">${esc(ti(i.type, i.params))}</div></div>`;
+    });
+    html += '</div>';
+  });
+
+  body.innerHTML = html;
+}
+
+function toggleHealthPanel() {
+  document.getElementById('health-panel').classList.toggle('open');
+}
+
 /* ── Bootstrap ── */
 computeLayout();
 renderCards();
 drawArrows();
+renderHealthPanel();
+renderSummaryPanel();
+
+/* ── Export PNG ── */
+function exportPNG() {
+  const btn = document.querySelector('[onclick="exportPNG()"]');
+  btn.disabled = true;
+  btn.textContent = ts('exporting');
+
+  html2canvas(document.getElementById('canvas'), {
+    backgroundColor: '#F8FAFC',
+    scale: 2,
+    useCORS: true,
+    allowTaint: true,
+    scrollX: 0,
+    scrollY: 0
+  }).then(canvas => {
+    const link = document.createElement('a');
+    link.download = 'schema___DOMAIN__.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    btn.disabled = false;
+    btn.innerHTML = ts('btn-export');
+  }).catch(() => {
+    btn.disabled = false;
+    btn.innerHTML = ts('btn-export');
+  });
+}
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
 </html>
 """
