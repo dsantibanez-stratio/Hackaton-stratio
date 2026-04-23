@@ -572,6 +572,8 @@ function drawArrows() {
     svg.appendChild(hit);
     svg.appendChild(d1);
     svg.appendChild(d2);
+    svg.appendChild(cardBadge(from.x, from.y, fSide, 'N'));
+    svg.appendChild(cardBadge(to.x,   to.y,   tSide, '1'));
   });
 }
 
@@ -588,6 +590,27 @@ function svgEl(tag, attrs = {}) {
 }
 function dot(x, y) {
   return svgEl('circle', { cx: x, cy: y, r: 3, fill: '#e3b341', opacity: '.5', class: 'rel-path' });
+}
+function cardBadge(x, y, side, label) {
+  /* Small circle badge showing cardinality (N or 1) at each arrow endpoint.
+     Positioned just outside the card edge in the direction the curve travels. */
+  const offset = side === 'r' ? 18 : -18;
+  const bx = x + offset;
+  const g = svgEl('g', { class: 'rel-path' });
+  g.appendChild(svgEl('circle', {
+    cx: bx, cy: y, r: 7,
+    fill: '#161b22', stroke: '#e3b341', 'stroke-width': '1.2', opacity: '.92',
+  }));
+  const t = svgEl('text', {
+    x: bx, y: y,
+    'text-anchor': 'middle', 'dominant-baseline': 'central',
+    fill: '#e3b341', 'font-size': '9',
+    'font-family': "'SFMono-Regular', Consolas, monospace",
+    'font-weight': '700', 'letter-spacing': '0',
+  });
+  t.textContent = label;
+  g.appendChild(t);
+  return g;
 }
 function esc(s) {
   return String(s)
