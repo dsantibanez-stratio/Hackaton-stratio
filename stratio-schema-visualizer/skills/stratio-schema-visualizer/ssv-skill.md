@@ -63,9 +63,59 @@ Assemble a JSON object in this exact shape and write it to `/tmp/stratio_schema_
 }
 ```
 
-Leave `relationships` as an empty array — the generation script will infer them automatically from column naming patterns.
+Leave `relationships` as an empty array for now — it will be populated in the next step.
 
 Mark `is_primary_key: true` for any column named exactly `id` or following the pattern `<table_name>_id` in its own table.
+
+### Step 3b — Infer and verify relationships with real data
+
+**Accuracy is the top priority of this skill. Never show cardinality that has not been verified against actual data.**
+
+#### 3b.1 — Infer candidate FK relationships
+
+Scan all column names looking for:
+- Columns ending in `_id` whose prefix matches another table's name (e.g. `customer_id` → table `customer`)
+- Columns ending in `_ref` whose prefix matches the last segment of another table's name (e.g. `pac_ref` → table `tbl_pac`)
+
+Build a candidate list: `[{from_table, from_column, to_table, to_column}]`.
+
+#### 3b.2 — Verify cardinality with a SQL query per relationship
+
+For **each** candidate relationship, call `stratio_data-execute_sql` with:
+
+```sql
+SELECT
+  COUNT(*)                      AS total_rows,
+  COUNT(DISTINCT <from_column>) AS distinct_vals
+FROM <from_table>
+WHERE <from_column> IS NOT NULL
+```
+
+Determine cardinality from the result:
+- `total_rows == distinct_vals` → **`"1:1"`** (each FK value appears exactly once)
+- `total_rows > distinct_vals`  → **`"N:1"`** (multiple rows share the same FK value)
+- Query fails or returns 0 rows → **`"?"`** (unknown — do not guess)
+
+If there are more than 5 relationships, run the queries in parallel.
+
+#### 3b.3 — Populate relationships in the JSON
+
+Replace the empty `relationships` array with the verified list:
+
+```json
+"relationships": [
+  {
+    "from_table": "orders",
+    "from_column": "customer_id",
+    "to_table":   "customers",
+    "to_column":  "id",
+    "cardinality": "N:1",
+    "inferred": true
+  }
+]
+```
+
+Only include relationships where the query succeeded. Skip any candidate where the query errored or the column does not exist.
 
 ### Step 4 — Generate the HTML visualization
 
@@ -105,7 +155,8 @@ If any tables were skipped (permissions/timeout), mention them at the end.
 
 ## Notes
 
-- Relationships are **inferred** from column naming patterns (`<other_table>_id` → `<other_table>.id`). They are shown as dashed lines and labeled "inferred". They are helpful heuristics, not guaranteed FK constraints.
+- **Correctness is non-negotiable.** Every relationship and its cardinality shown in the diagram must be backed by a real SQL query result. Never show a cardinality badge based on naming convention alone.
+- Relationships whose query returned `"?"` are still shown in the diagram but with a `?` badge and a visual indicator that cardinality is unverified.
 - The output HTML is fully standalone — embeds all JS from CDN on first load, then works offline.
 - The script requires only Python 3 stdlib (json, argparse) — no pip installs needed.
 - If the domain has no tables with column access, inform the user that permissions may be limiting visibility.

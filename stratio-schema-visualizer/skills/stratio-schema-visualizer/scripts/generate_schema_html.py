@@ -69,6 +69,7 @@ def infer_relationships(tables: list) -> list:
                 "to_table": ref_table,
                 "to_column": ref_col,
                 "inferred": True,
+                "cardinality": "N:1",  # default assumption; skill overrides with real query
             })
     return relationships
 
@@ -572,8 +573,13 @@ function drawArrows() {
     svg.appendChild(hit);
     svg.appendChild(d1);
     svg.appendChild(d2);
-    svg.appendChild(cardBadge(from.x, from.y, fSide, 'N'));
-    svg.appendChild(cardBadge(to.x,   to.y,   tSide, '1'));
+    /* Cardinality badges — driven by verified data, never hardcoded */
+    const card = r.cardinality || '?';
+    const srcLabel = (card === '1:1') ? '1' : (card === 'N:1') ? 'N' : '?';
+    const tgtLabel = (card === '?')   ? '?' : '1';
+    const unknown  = (card === '?');
+    svg.appendChild(cardBadge(from.x, from.y, fSide, srcLabel, unknown));
+    svg.appendChild(cardBadge(to.x,   to.y,   tSide, tgtLabel, unknown));
   });
 }
 
@@ -591,22 +597,25 @@ function svgEl(tag, attrs = {}) {
 function dot(x, y) {
   return svgEl('circle', { cx: x, cy: y, r: 3, fill: '#e3b341', opacity: '.5', class: 'rel-path' });
 }
-function cardBadge(x, y, side, label) {
-  /* Small circle badge showing cardinality (N or 1) at each arrow endpoint.
-     Positioned just outside the card edge in the direction the curve travels. */
-  const offset = side === 'r' ? 18 : -18;
-  const bx = x + offset;
+function cardBadge(x, y, side, label, unknown) {
+  /* Circle badge showing verified cardinality at each arrow endpoint.
+     unknown=true renders in grey to signal unverified data. */
+  const offset  = side === 'r' ? 18 : -18;
+  const bx      = x + offset;
+  const stroke  = unknown ? '#656d76' : '#e3b341';
+  const fill    = unknown ? '#8b949e' : '#e3b341';
+  const bg      = unknown ? '#1c2128' : '#161b22';
   const g = svgEl('g', { class: 'rel-path' });
   g.appendChild(svgEl('circle', {
     cx: bx, cy: y, r: 7,
-    fill: '#161b22', stroke: '#e3b341', 'stroke-width': '1.2', opacity: '.92',
+    fill: bg, stroke: stroke, 'stroke-width': '1.2', opacity: '.92',
   }));
   const t = svgEl('text', {
     x: bx, y: y,
     'text-anchor': 'middle', 'dominant-baseline': 'central',
-    fill: '#e3b341', 'font-size': '9',
+    fill: fill, 'font-size': '9',
     'font-family': "'SFMono-Regular', Consolas, monospace",
-    'font-weight': '700', 'letter-spacing': '0',
+    'font-weight': '700',
   });
   t.textContent = label;
   g.appendChild(t);
