@@ -140,6 +140,12 @@ header {
   width: 1px; height: 24px;
   background: rgba(255,255,255,.2);
 }
+.header-title {
+  font-size: 14px; font-weight: 600;
+  color: rgba(255,255,255,.9);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
 .domain-chip {
   background: rgba(7,118,223,.25);
   border: 1px solid rgba(7,118,223,.5);
@@ -333,6 +339,8 @@ header {
   <div class="logo">
     <img src="__LOGO_SRC__" alt="Stratio">
   </div>
+  <div class="header-divider"></div>
+  <div class="header-title">Esquema relacional · __DOMAIN_LABEL__</div>
   <div class="header-divider"></div>
   <div class="domain-chip">__DOMAIN__</div>
   <div class="hstats">
@@ -699,9 +707,12 @@ def main():
 
     logo_src = "data:image/png;base64," + LOGO_B64
 
+    domain_label = data["domain"].replace("_", " ").replace("-", " ").title()
+
     html = TEMPLATE
     html = html.replace("__DATA_JSON__",    json.dumps(data, ensure_ascii=False, indent=2))
     html = html.replace("__DOMAIN__",       data["domain"])
+    html = html.replace("__DOMAIN_LABEL__", domain_label)
     html = html.replace("__TABLE_COUNT__",  str(ntables))
     html = html.replace("__COL_COUNT__",    str(ncols))
     html = html.replace("__REL_COUNT__",    str(nrels))
