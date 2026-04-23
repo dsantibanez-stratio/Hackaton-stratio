@@ -5,7 +5,7 @@ description: Use this skill to visually explore and understand the relational sc
 
 # Stratio Schema Visualizer
 
-Generates an interactive, browser-based relational schema diagram from a Stratio data domain. Shows tables as nodes, columns with types and governance descriptions, and inferred FK relationships as directed edges. Output is a standalone HTML file — no server needed.
+Generates an interactive, browser-based relational schema diagram from a Stratio data domain. Shows tables as nodes, columns with types and governance descriptions, inferred FK relationships as directed edges with verified cardinality, and data quality badges. Output is a fully standalone HTML file — no server needed.
 
 ## Workflow
 
@@ -148,19 +148,104 @@ xdg-open "$OUTPUT_FILE" 2>/dev/null || python3 -m webbrowser "$OUTPUT_FILE" 2>/d
 ```
 
 Tell the user:
-> "The schema visualization is open in your browser. You can:
-> - **Click any table** to see its full column list with types and descriptions
-> - **Drag tables** to rearrange the layout
-> - **Scroll** to zoom in/out
-> - **Hover over connections** to see the relationship details
-> - Use the **Fit** button to re-center the view, or **Layout** to switch between layout modes"
+
+> "El esquema relacional de **\<domain\>** está abierto en el navegador. Funcionalidades disponibles:
+>
+> **Diagrama**
+> - **Arrastra** las tablas para reorganizar el layout
+> - **Scroll** para hacer zoom
+> - **Hover sobre una columna** para ver su descripción de governance
+> - **Hover sobre una flecha** para ver el detalle de la relación y su cardinalidad
+> - **Hover sobre el badge de calidad** (%) para ver el score de calidad de datos de la tabla
+>
+> **Cabecera — botones de acción**
+> - **▶ Presentar** — activa el modo presentación: resalta la entidad central y permite avanzar paso a paso por el modelo, atenuando el resto del diagrama en cada paso
+> - **📖 Resumen** — abre un panel lateral izquierdo con la descripción del dominio en lenguaje natural: entidad central, lista de entidades con sus descripciones de governance y mapa de relaciones
+> - **↺ Restablecer** — vuelve al layout original
+> - **⊞ Ajustar** — centra y escala el diagrama para que quepa en pantalla
+> - **⚕ Salud del esquema** — abre un panel lateral derecho con avisos automáticos: tablas sin clave primaria, tablas aisladas, relaciones con cardinalidad no verificada y columnas sin descripción de governance
+> - **📄 Exportar DDL** — descarga un fichero `.sql` con los `CREATE TABLE` inferidos del esquema
+> - **⬇ Exportar PNG** — descarga una captura del diagrama completo en alta resolución
+> - **🇬🇧 English / 🇪🇸 Español** — cambia el idioma de toda la interfaz
+>
+> **Barra de filtros** (debajo de la cabecera)
+> Toggles para mostrar/ocultar en tiempo real: tipos de dato · columnas no clave · descripciones (tooltips) · relaciones sin verificar
+>
+> **Leyenda** (esquina inferior derecha)
+> Explica los colores de los badges de calidad (verde ≥ 80 %, amarillo 40–79 %, rojo < 40 %), las claves primarias y las FK inferidas."
 
 If any tables were skipped (permissions/timeout), mention them at the end.
+
+## Features of the generated HTML
+
+The output is a fully standalone HTML file that embeds all assets. It requires an internet connection on first load to fetch fonts and the html2canvas library from CDN, but works offline after that.
+
+### Table cards
+- Each table is rendered as a draggable card with a dark header showing the table name, column count, and optionally a **data quality badge** (colour-coded: green ≥ 80 %, yellow 40–79 %, red < 40 %)
+- Hovering over the quality badge shows a tooltip: *"Calidad de datos: X%"*
+- PK columns are marked with a red left border and a `PK` label
+- FK columns are marked with a `FK` label
+- Each column shows its data type as a colour-coded chip
+- Hovering over a column shows its governance description in a tooltip (can be toggled off)
+
+### Relationships
+- Drawn as dashed bezier arrows with cardinality badges at each endpoint
+- Verified cardinalities (`1:1`, `N:1`) are shown in blue; unverified (`?`) in grey
+- Hovering over an arrow highlights the source and target column rows
+
+### Header bar
+| Button | Action |
+|--------|--------|
+| ▶ Presentar / Present | Activates presentation mode |
+| 📖 Resumen / Summary | Opens domain summary panel (left) |
+| ↺ Restablecer / Reset | Restores the original auto-layout |
+| ⊞ Ajustar / Fit | Fits the full diagram in the viewport |
+| ⚕ Salud del esquema / Schema Health | Opens the schema health panel (right) |
+| 📄 Exportar DDL / Export DDL | Downloads `schema_<domain>.sql` |
+| ⬇ Exportar PNG / Export PNG | Downloads a 2× resolution PNG of the canvas |
+| 🇬🇧 English / 🇪🇸 Español | Toggles the UI language |
+
+### Filter bar
+Four real-time toggles below the header:
+- **Tipos de dato / Data types** — show/hide the type chips on columns
+- **Columnas no clave / Non-key columns** — show/hide all non-PK, non-FK rows
+- **Descripciones / Descriptions** — enable/disable governance description tooltips
+- **Relaciones sin verificar / Unverified relations** — show/hide arrows with `?` cardinality
+
+### Schema Health panel
+Auto-computed warnings grouped by category:
+- **Clave primaria ausente / Missing Primary Key** — tables with no PK column
+- **Tablas aisladas / Isolated Tables** — tables with no relationships
+- **Cardinalidad no verificada / Unverified Cardinality** — relationships where the SQL query failed or was not authorised
+- **Descripciones de governance ausentes / Missing Governance Descriptions** — columns without a description
+
+### Domain Summary panel
+Generated client-side from governance metadata already in the JSON (no extra API calls):
+- Intro sentence with entity and relationship counts
+- Central entity (most connections) with its governance description
+- Full entity list with one-line descriptions
+- Relationship map showing source → target and the linking column
+
+### Presentation mode
+Step-by-step walkthrough of the schema:
+1. Highlights the central entity (most connections), dims everything else
+2. Each "Next" step adds one connected table and its arrow, scrolling the canvas smoothly
+3. Final step reveals any remaining isolated tables
+4. A bottom bar shows the step counter, a description of the current entity, and Prev / Next / Exit controls
+5. Fully translatable; language switch works while in presentation mode
+
+### DDL export
+Downloads a `.sql` file with `CREATE TABLE` statements inferred from the schema:
+- Type mapping: `STRING → VARCHAR(255)`, `INTEGER → INT`, `FLOAT → FLOAT`, `BOOLEAN → BOOLEAN`, `DATE → DATE`, `TIMESTAMP → TIMESTAMP`, others → `TEXT`
+- Primary keys included as `PRIMARY KEY (col)` constraint
+- Governance descriptions included as inline SQL comments (truncated to 80 chars)
+- Header block with domain name and generation date
 
 ## Notes
 
 - **Correctness is non-negotiable.** Every relationship and its cardinality shown in the diagram must be backed by a real SQL query result. Never show a cardinality badge based on naming convention alone.
 - Relationships whose query returned `"?"` are still shown in the diagram but with a `?` badge and a visual indicator that cardinality is unverified.
+- `quality_score: null` means the quality data was unavailable (permissions or no data) — no badge is shown for that table.
 - The output HTML is fully standalone — embeds all JS from CDN on first load, then works offline.
 - The script requires only Python 3 stdlib (json, argparse) — no pip installs needed.
 - If the domain has no tables with column access, inform the user that permissions may be limiting visibility.

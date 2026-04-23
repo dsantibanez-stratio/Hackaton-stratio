@@ -333,6 +333,43 @@ body.hide-types   .ctype                    { display: none !important; }
 body.hide-nonkey  .crow:not(.pk):not(.fk)  { display: none !important; }
 body.hide-unverified .unverified-rel        { display: none !important; }
 
+/* ── Presentation mode ── */
+body.present-mode .tcard {
+  opacity: .08; filter: grayscale(40%);
+  transition: opacity .35s, filter .35s;
+}
+body.present-mode .tcard.pres-active {
+  opacity: 1; filter: none;
+  box-shadow: 0 0 0 3px var(--action6), 0 12px 32px rgba(7,118,223,.35);
+  z-index: 10;
+}
+body.present-mode #svg-layer > g       { opacity: .04; transition: opacity .35s; }
+body.present-mode #svg-layer > g.pres-rel-active { opacity: 1; }
+
+#pres-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+  background: rgba(15,27,39,.97); backdrop-filter: blur(8px);
+  border-top: 2px solid var(--action6);
+  padding: 10px 20px;
+  display: none; align-items: center; gap: 20px;
+}
+body.present-mode #pres-bar { display: flex; }
+.pres-desc { flex: 1; color: rgba(255,255,255,.85); font-size: 13px; min-width: 0; }
+.pres-desc b { color: var(--white); }
+.pres-desc small { color: rgba(255,255,255,.5); font-size: 11px; display: block; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pres-nav  { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.pres-btn  {
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.2);
+  color: rgba(255,255,255,.85); padding: 6px 14px; border-radius: 6px;
+  font-size: 12px; cursor: pointer; font-family: 'Inter', sans-serif; font-weight: 500;
+  transition: background .15s, border-color .15s;
+}
+.pres-btn:hover:not(:disabled) { background: var(--action6); border-color: var(--action6); }
+.pres-btn:disabled { opacity: .3; cursor: not-allowed; }
+.pres-exit-btn { border-color: rgba(239,68,68,.4); color: #f87171; }
+.pres-exit-btn:hover { background: rgba(239,68,68,.2) !important; border-color: #f87171 !important; }
+.pres-counter { font-size: 11px; color: rgba(255,255,255,.45); white-space: nowrap; min-width: 60px; text-align: center; }
+
 /* ── Domain Summary panel ── */
 #summary-panel {
   position: fixed; top: 92px; left: 0; bottom: 0;
@@ -515,10 +552,12 @@ body.hide-unverified .unverified-rel        { display: none !important; }
     <div class="hstat"><b>__COL_COUNT__</b> <span data-i18n="hstat-cols">columnas</span></div>
     <div class="hstat"><b>__REL_COUNT__</b> <span data-i18n="hstat-rels">relaciones</span></div>
     <div class="sep"></div>
+    <button class="hbtn" data-i18n="btn-present" onclick="startPresentation()">&#9654; Presentar</button>
     <button class="hbtn" data-i18n="btn-summary" onclick="toggleSummaryPanel()">&#128218; Resumen</button>
     <button class="hbtn" data-i18n="btn-reset" onclick="resetLayout()">&#8635; Restablecer</button>
     <button class="hbtn" data-i18n="btn-fit" onclick="fitView()">&#8862; Ajustar</button>
     <button class="hbtn" data-i18n="btn-health" id="health-btn" onclick="toggleHealthPanel()">&#9874; Salud del esquema</button>
+    <button class="hbtn" data-i18n="btn-ddl"    onclick="exportDDL()">&#128196; Exportar DDL</button>
     <button class="hbtn" data-i18n="btn-export" onclick="exportPNG()">&#8659; Exportar PNG</button>
     <button class="hbtn" id="lang-btn" onclick="toggleLang()">&#127468;&#127463; English</button>
   </div>
@@ -551,6 +590,24 @@ body.hide-unverified .unverified-rel        { display: none !important; }
   <div class="leg-row"><div class="l-box"></div> <span data-i18n="legend-table">Tabla</span></div>
   <div class="leg-row"><div class="l-pk"></div> <span data-i18n="legend-pk">Clave primaria</span></div>
   <div class="leg-row"><div class="l-line"></div> <span data-i18n="legend-fk">FK inferida</span></div>
+  <div class="leg-row">
+    <div style="display:flex;gap:2px;flex-shrink:0">
+      <span class="quality-badge quality-green"  style="font-size:7px;padding:0 4px">&#9632;</span>
+      <span class="quality-badge quality-yellow" style="font-size:7px;padding:0 4px">&#9632;</span>
+      <span class="quality-badge quality-red"    style="font-size:7px;padding:0 4px">&#9632;</span>
+    </div>
+    <span data-i18n="legend-quality">Calidad de datos</span>
+  </div>
+</div>
+
+<div id="pres-bar">
+  <div class="pres-desc" id="pres-desc"></div>
+  <div class="pres-nav">
+    <button class="pres-btn" id="pres-prev-btn" data-i18n="pres-prev" onclick="presStep(-1)">&#8592; Anterior</button>
+    <span class="pres-counter" id="pres-info"></span>
+    <button class="pres-btn" id="pres-next-btn" data-i18n="pres-next" onclick="presStep(1)">Siguiente &#8594;</button>
+    <button class="pres-btn pres-exit-btn" data-i18n="pres-exit" onclick="exitPresentation()">&#10005; Salir</button>
+  </div>
 </div>
 
 <div id="summary-panel">
@@ -599,14 +656,21 @@ const I18N = {
     'btn-fit':       { es: '&#8862; Ajustar',           en: '&#8862; Fit' },
     'btn-health':    { es: '&#9874; Salud del esquema', en: '&#9874; Schema Health' },
     'btn-export':    { es: '&#8659; Exportar PNG',      en: '&#8659; Export PNG' },
+    'btn-ddl':       { es: '&#128196; Exportar DDL',   en: '&#128196; Export DDL' },
     'legend-title':  { es: 'Leyenda',                   en: 'Legend' },
     'legend-table':  { es: 'Tabla',                     en: 'Table' },
     'legend-pk':     { es: 'Clave primaria',            en: 'Primary key' },
-    'legend-fk':     { es: 'FK inferida',               en: 'Inferred FK' },
+    'legend-fk':      { es: 'FK inferida',               en: 'Inferred FK' },
+    'legend-quality': { es: 'Calidad de datos',          en: 'Data quality' },
     'hp-title':      { es: '&#9874; Salud del esquema', en: '&#9874; Schema Health' },
     'hp-empty':      { es: '&#10003; Sin problemas detectados', en: '&#10003; No issues found' },
     'exporting':         { es: 'Exportando…',             en: 'Exporting…' },
+    'btn-present':       { es: '&#9654; Presentar',         en: '&#9654; Present' },
     'btn-summary':       { es: '&#128218; Resumen',        en: '&#128218; Summary' },
+    'pres-prev':         { es: '&#8592; Anterior',         en: '&#8592; Previous' },
+    'pres-next':         { es: 'Siguiente &#8594;',        en: 'Next &#8594;' },
+    'pres-exit':         { es: '&#10005; Salir',           en: '&#10005; Exit' },
+    'pres-full':         { es: 'Vista completa',           en: 'Full view' },
     'sum-title':         { es: 'Resumen del dominio',     en: 'Domain summary' },
     'sum-entities':      { es: 'Entidades',               en: 'Entities' },
     'sum-central':       { es: 'Entidad central',         en: 'Central entity' },
@@ -645,6 +709,22 @@ const I18N_DYN = {
     es: p => `El dominio <b>${p.d}</b> contiene <b>${p.nt}</b> entidad${p.nt!==1?'es':''} relacionadas a través de <b>${p.nr}</b> relación${p.nr!==1?'es':''}.`,
     en: p => `Domain <b>${p.d}</b> has <b>${p.nt}</b> entr${p.nt!==1?'ies':'y'} linked through <b>${p.nr}</b> relationship${p.nr!==1?'s':''}.`,
   },
+  'quality-tip': {
+    es: p => `Calidad de datos: ${p.score}%`,
+    en: p => `Data quality: ${p.score}%`,
+  },
+  'pres-step': {
+    es: p => `Paso ${p.n} de ${p.total}`,
+    en: p => `Step ${p.n} of ${p.total}`,
+  },
+  'pres-central-lbl': {
+    es: p => `Entidad central: ${p.name}`,
+    en: p => `Central entity: ${p.name}`,
+  },
+  'pres-explore-lbl': {
+    es: p => `+ ${p.name}`,
+    en: p => `+ ${p.name}`,
+  },
 };
 
 function ts(key)      { return I18N.static[key][LANG]; }
@@ -676,6 +756,7 @@ function toggleLang() {
   applyLang();
   renderHealthPanel();
   renderSummaryPanel();
+  if (PRES.active) applyStep(PRES.steps[PRES.step]);
 }
 
 /* ── Domain Summary ── */
@@ -817,6 +898,10 @@ function renderCards() {
       ${qBadge}
       <span class="thead-count">${t.columns.length}</span>`;
     card.appendChild(hdr);
+    if (qScore != null) {
+      const badgeEl = hdr.querySelector('.quality-badge');
+      if (badgeEl) attachQualityTooltip(badgeEl, qScore);
+    }
 
     /* columns */
     t.columns.forEach(c => {
@@ -852,6 +937,12 @@ function typeClass(t) {
 }
 
 /* ── Tooltip ── */
+function attachQualityTooltip(el, score) {
+  el.addEventListener('mouseenter', e => { tip.textContent = td('quality-tip', { score }); tip.style.display = 'block'; moveTooltip(e); });
+  el.addEventListener('mousemove',  moveTooltip);
+  el.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+}
+
 function attachTooltip(rowEl, text) {
   rowEl.addEventListener('mouseenter', e => {
     if (!FILTERS.descs) return;
@@ -978,7 +1069,7 @@ function drawArrows() {
     const tgtLabel = (card === '?')   ? '?' : '1';
     const unknown  = (card === '?');
 
-    const relGroup = svgEl('g', { class: unknown ? 'unverified-rel' : '' });
+    const relGroup = svgEl('g', { class: unknown ? 'unverified-rel' : '', 'data-pres-idx': String(idx) });
     relGroup.appendChild(path);
     relGroup.appendChild(hit);
     relGroup.appendChild(d1);
@@ -1049,6 +1140,112 @@ function fitView() {
   const bw = maxX - minX + PAD * 2, bh = maxY - minY + PAD * 2;
   wrap.scrollLeft = Math.max(0, (minX - PAD) - (cw - bw) / 2);
   wrap.scrollTop  = Math.max(0, (minY - PAD) - (ch - bh) / 2);
+}
+
+/* ── Presentation mode ── */
+const PRES = { active: false, steps: [], step: 0 };
+
+function buildSteps() {
+  const conns = {};
+  DATA.tables.forEach(t => { conns[t.name] = 0; });
+  DATA.relationships.forEach(r => {
+    conns[r.from_table] = (conns[r.from_table]||0) + 1;
+    conns[r.to_table]   = (conns[r.to_table]  ||0) + 1;
+  });
+  const central = DATA.tables.reduce((best, t) =>
+    (conns[t.name]||0) > (conns[best.name]||0) ? t : best, DATA.tables[0]);
+
+  const steps = [];
+  const shownTables = new Set([central.name]);
+  const shownRels   = new Set();
+
+  steps.push({ tables: [central.name], relIdxs: [], label: central.name, isCentral: true });
+
+  DATA.relationships
+    .map((r, i) => ({ ...r, idx: i }))
+    .filter(r => r.from_table === central.name || r.to_table === central.name)
+    .forEach(r => {
+      const other = r.from_table === central.name ? r.to_table : r.from_table;
+      shownTables.add(other);
+      shownRels.add(r.idx);
+      steps.push({ tables: [...shownTables], relIdxs: [...shownRels], label: other, isCentral: false });
+    });
+
+  const remaining = DATA.tables.map(t => t.name).filter(n => !shownTables.has(n));
+  if (remaining.length > 0) {
+    remaining.forEach(n => shownTables.add(n));
+    DATA.relationships.forEach((_, i) => shownRels.add(i));
+    steps.push({ tables: [...shownTables], relIdxs: [...shownRels], label: null, isCentral: false });
+  }
+  return steps;
+}
+
+function centerOnTables(tableNames) {
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  tableNames.forEach(name => {
+    const p = pos[name]; if (!p) return;
+    const h = cardH(byName[name]);
+    minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x + CARD_W);
+    minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y + h);
+  });
+  wrap.scrollTo({
+    left: (minX + maxX) / 2 - wrap.clientWidth  / 2,
+    top:  (minY + maxY) / 2 - wrap.clientHeight / 2,
+    behavior: 'smooth'
+  });
+}
+
+function applyStep(step) {
+  document.querySelectorAll('.tcard').forEach(c => c.classList.remove('pres-active'));
+  step.tables.forEach(name => {
+    const c = document.getElementById('card-' + name);
+    if (c) c.classList.add('pres-active');
+  });
+  document.querySelectorAll('#svg-layer > g').forEach(g => g.classList.remove('pres-rel-active'));
+  step.relIdxs.forEach(i => {
+    const g = svg.querySelector(`[data-pres-idx="${i}"]`);
+    if (g) g.classList.add('pres-rel-active');
+  });
+  centerOnTables(step.tables.slice(-2));  // focus on newly added tables
+
+  const n = PRES.step + 1, total = PRES.steps.length;
+  document.getElementById('pres-info').textContent = td('pres-step', { n, total });
+  document.getElementById('pres-prev-btn').disabled = PRES.step === 0;
+  document.getElementById('pres-next-btn').disabled = PRES.step === total - 1;
+
+  let desc = '';
+  if (step.isCentral) {
+    const d = shortDesc((byName[step.label] || {}).description);
+    desc = `<b>${td('pres-central-lbl', { name: step.label })}</b>${d ? `<small>${esc(d)}</small>` : ''}`;
+  } else if (step.label) {
+    const d = shortDesc((byName[step.label] || {}).description);
+    desc = `<b>${td('pres-explore-lbl', { name: step.label })}</b>${d ? `<small>${esc(d)}</small>` : ''}`;
+  } else {
+    desc = `<b>${ts('pres-full')}</b>`;
+  }
+  document.getElementById('pres-desc').innerHTML = desc;
+}
+
+function startPresentation() {
+  PRES.steps  = buildSteps();
+  PRES.step   = 0;
+  PRES.active = true;
+  document.body.classList.add('present-mode');
+  applyStep(PRES.steps[0]);
+}
+
+function exitPresentation() {
+  PRES.active = false;
+  document.body.classList.remove('present-mode');
+  document.querySelectorAll('.tcard').forEach(c => c.classList.remove('pres-active'));
+  document.querySelectorAll('#svg-layer > g').forEach(g => g.classList.remove('pres-rel-active'));
+}
+
+function presStep(dir) {
+  const next = PRES.step + dir;
+  if (next < 0 || next >= PRES.steps.length) return;
+  PRES.step = next;
+  applyStep(PRES.steps[PRES.step]);
 }
 
 /* ── Schema Health ── */
@@ -1126,6 +1323,66 @@ renderCards();
 drawArrows();
 renderHealthPanel();
 renderSummaryPanel();
+
+/* ── Export DDL ── */
+function exportDDL() {
+  function sqlType(t) {
+    switch ((t || '').toUpperCase()) {
+      case 'STRING':    return 'VARCHAR(255)';
+      case 'INTEGER':   return 'INT';
+      case 'FLOAT':
+      case 'DOUBLE':    return 'FLOAT';
+      case 'BOOLEAN':   return 'BOOLEAN';
+      case 'DATE':      return 'DATE';
+      case 'TIMESTAMP': return 'TIMESTAMP';
+      default:          return 'TEXT';
+    }
+  }
+
+  const lines = [];
+  const sep = '-- ' + '='.repeat(60);
+  lines.push(sep);
+  lines.push(`-- Domain  : ${DATA.domain}`);
+  lines.push(`-- Generated: ${new Date().toISOString().slice(0, 10)}`);
+  lines.push(`-- Source  : Stratio Schema Visualizer`);
+  lines.push(sep);
+
+  DATA.tables.forEach(t => {
+    lines.push('');
+    // Table comment from governance description (first sentence)
+    const desc = (t.description || '').replace(/#+[^\n]*/g, '').replace(/\*\*/g, '').trim().split('.')[0].trim();
+    if (desc) lines.push(`-- ${desc.substring(0, 100)}`);
+
+    const pks = t.columns.filter(c => c.is_primary_key).map(c => c.name);
+
+    // Column name padding
+    const maxLen = Math.max(...t.columns.map(c => c.name.length));
+
+    lines.push(`CREATE TABLE ${t.name} (`);
+    t.columns.forEach((c, i) => {
+      const isLast  = i === t.columns.length - 1 && pks.length === 0;
+      const comma   = isLast ? '' : ',';
+      const padded  = c.name.padEnd(maxLen + 2);
+      const type    = sqlType(c.type).padEnd(14);
+      const notnull = c.is_primary_key ? ' NOT NULL' : '';
+      const comment = c.description ? `  -- ${c.description.replace(/\n/g, ' ').substring(0, 80)}` : '';
+      lines.push(`    ${padded}${type}${notnull}${comma}${comment}`);
+    });
+
+    if (pks.length > 0) {
+      lines.push(`    PRIMARY KEY (${pks.join(', ')})`);
+    }
+    lines.push(');');
+  });
+
+  const sql  = lines.join('\n');
+  const blob = new Blob([sql], { type: 'text/plain;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href     = URL.createObjectURL(blob);
+  link.download = `schema_${DATA.domain}.sql`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
 
 /* ── Export PNG ── */
 function exportPNG() {
