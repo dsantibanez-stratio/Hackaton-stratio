@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "StratioData": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote@latest",
+        "https://genai.s000001.stratiodemo5.ext/genai-litellm-demo/stratio_data/mcp",
+        "--header",
+        "x-litellm-api-key: Bearer sk-ed19d2d330c3afb62d065adac74bbed9-keos"
+      ],
+      "env": {
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+      }
+    }
+  }
+}

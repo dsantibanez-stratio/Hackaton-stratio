@@ -1,0 +1,23 @@
+{
+  "skill_name": "stratio-schema-visualizer",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I want to understand the structure of the sales domain. Can you show me a schema with all the tables and how they relate?",
+      "expected_output": "An interactive HTML file is generated and opened in the browser, showing all tables in the sales domain as nodes in a network graph, with columns visible in the sidebar on click and inferred FK relationships shown as dashed edges.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Show me the esquema relacional of my Stratio data. I'm not sure which domain to pick.",
+      "expected_output": "Claude lists available domains using list_domains, presents them to the user, waits for a selection, then generates and opens the visualization HTML for the chosen domain.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Can you draw an ER diagram for the customer domain in Stratio?",
+      "expected_output": "Claude fetches table and column metadata for the customer domain, generates the HTML visualization with tables, columns, types, descriptions and inferred FK edges, and opens it in the browser.",
+      "files": []
+    }
+  ]
+}

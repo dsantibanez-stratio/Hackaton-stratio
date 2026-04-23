@@ -1,0 +1,9 @@
+{
+  "name": "stratio-schema-visualizer",
+  "description": "Visualize the relational schema of Stratio data domain tables as an interactive browser-based diagram",
+  "author": {
+    "name": "Stratio",
+    "email": "dsantibanez@stratio.com"
+  },
+  "version": "1.0.0"
+}
