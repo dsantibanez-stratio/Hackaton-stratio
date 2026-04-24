@@ -133,9 +133,17 @@ if [ -z "$SKILL_DIR" ]; then
   SKILL_DIR=$(find . -path "*/stratio-schema-visualizer/scripts/generate_schema_html.py" 2>/dev/null | head -1 | xargs -I{} dirname {} | xargs -I{} dirname {} 2>/dev/null)
 fi
 
+# Output goes to the project's visualizaciones/ folder with a timestamp
+PROJECT_ROOT=$(git -C "$(dirname "$SKILL_DIR")" rev-parse --show-toplevel 2>/dev/null || dirname "$(dirname "$SKILL_DIR")")
+VIZ_DIR="$PROJECT_ROOT/visualizaciones"
+mkdir -p "$VIZ_DIR"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+DOMAIN_SLUG=$(echo "<domain_name>" | tr ' /' '__')
+OUTPUT_FILE="$VIZ_DIR/${DOMAIN_SLUG}_${TIMESTAMP}.html"
+
 python3 "$SKILL_DIR/scripts/generate_schema_html.py" \
   --input /tmp/stratio_schema_input.json \
-  --output /tmp/stratio_schema_$(echo "<domain_name>" | tr ' /' '__').html
+  --output "$OUTPUT_FILE"
 ```
 
 Replace `<domain_name>` with the actual domain name (spaces and slashes replaced with underscores).
@@ -143,7 +151,6 @@ Replace `<domain_name>` with the actual domain name (spaces and slashes replaced
 ### Step 5 — Open in browser
 
 ```bash
-OUTPUT_FILE="/tmp/stratio_schema_<domain_name>.html"
 xdg-open "$OUTPUT_FILE" 2>/dev/null || python3 -m webbrowser "$OUTPUT_FILE" 2>/dev/null || echo "Open manually: $OUTPUT_FILE"
 ```
 
@@ -160,10 +167,9 @@ Tell the user:
 >
 > **Cabecera — botones de acción**
 > - **▶ Presentar** — activa el modo presentación: resalta la entidad central y permite avanzar paso a paso por el modelo, atenuando el resto del diagrama en cada paso
-> - **📖 Resumen** — abre un panel lateral izquierdo con la descripción del dominio en lenguaje natural: entidad central, lista de entidades con sus descripciones de governance y mapa de relaciones
 > - **↺ Restablecer** — vuelve al layout original
 > - **⊞ Ajustar** — centra y escala el diagrama para que quepa en pantalla
-> - **⚕ Salud del esquema** — abre un panel lateral derecho con avisos automáticos: tablas sin clave primaria, tablas aisladas, relaciones con cardinalidad no verificada y columnas sin descripción de governance
+> - **📊 Análisis** — abre un panel lateral derecho con dos pestañas: **Resumen** (entidad central, lista de entidades y mapa de relaciones) y **Salud del esquema** (avisos sobre PKs ausentes, tablas aisladas, cardinalidad no verificada y descripciones de governance ausentes). El botón muestra un badge naranja con el número total de avisos.
 > - **📄 Exportar DDL** — descarga un fichero `.sql` con los `CREATE TABLE` inferidos del esquema
 > - **⬇ Exportar PNG** — descarga una captura del diagrama completo en alta resolución
 > - **🇬🇧 English / 🇪🇸 Español** — cambia el idioma de toda la interfaz
@@ -197,10 +203,9 @@ The output is a fully standalone HTML file that embeds all assets. It requires a
 | Button | Action |
 |--------|--------|
 | ▶ Presentar / Present | Activates presentation mode |
-| 📖 Resumen / Summary | Opens domain summary panel (left) |
 | ↺ Restablecer / Reset | Restores the original auto-layout |
 | ⊞ Ajustar / Fit | Fits the full diagram in the viewport |
-| ⚕ Salud del esquema / Schema Health | Opens the schema health panel (right) |
+| 📊 Análisis / Analysis | Opens right-side panel with Summary and Schema Health tabs |
 | 📄 Exportar DDL / Export DDL | Downloads `schema_<domain>.sql` |
 | ⬇ Exportar PNG / Export PNG | Downloads a 2× resolution PNG of the canvas |
 | 🇬🇧 English / 🇪🇸 Español | Toggles the UI language |
@@ -212,19 +217,20 @@ Four real-time toggles below the header:
 - **Descripciones / Descriptions** — enable/disable governance description tooltips
 - **Relaciones sin verificar / Unverified relations** — show/hide arrows with `?` cardinality
 
-### Schema Health panel
-Auto-computed warnings grouped by category:
-- **Clave primaria ausente / Missing Primary Key** — tables with no PK column
-- **Tablas aisladas / Isolated Tables** — tables with no relationships
-- **Cardinalidad no verificada / Unverified Cardinality** — relationships where the SQL query failed or was not authorised
-- **Descripciones de governance ausentes / Missing Governance Descriptions** — columns without a description
+### Analysis panel (📊)
+A single right-side panel with two tabs, opened via the **Análisis / Analysis** button. The button shows an orange badge with the total number of health warnings.
 
-### Domain Summary panel
-Generated client-side from governance metadata already in the JSON (no extra API calls):
+**Summary tab** — generated client-side from governance metadata (no extra API calls):
 - Intro sentence with entity and relationship counts
 - Central entity (most connections) with its governance description
 - Full entity list with one-line descriptions
 - Relationship map showing source → target and the linking column
+
+**Schema Health tab** — auto-computed warnings grouped by category:
+- **Clave primaria ausente / Missing Primary Key** — tables with no PK column
+- **Tablas aisladas / Isolated Tables** — tables with no relationships
+- **Cardinalidad no verificada / Unverified Cardinality** — relationships where the SQL query failed or was not authorised
+- **Descripciones de governance ausentes / Missing Governance Descriptions** — columns without a description
 
 ### Presentation mode
 Step-by-step walkthrough of the schema:

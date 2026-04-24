@@ -370,31 +370,42 @@ body.present-mode #pres-bar { display: flex; }
 .pres-exit-btn:hover { background: rgba(239,68,68,.2) !important; border-color: #f87171 !important; }
 .pres-counter { font-size: 11px; color: rgba(255,255,255,.45); white-space: nowrap; min-width: 60px; text-align: center; }
 
-/* ── Domain Summary panel ── */
-#summary-panel {
-  position: fixed; top: 92px; left: 0; bottom: 0;
-  width: 300px; z-index: 100;
+/* ── Analysis panel (unified Resumen + Salud) ── */
+#analysis-panel {
+  position: fixed; top: 92px; right: 0; bottom: 0;
+  width: 320px; z-index: 100;
   background: var(--white);
-  border-right: 1px solid var(--border);
-  box-shadow: 4px 0 16px rgba(15,27,39,.10);
+  border-left: 1px solid var(--border);
+  box-shadow: -4px 0 16px rgba(15,27,39,.10);
   display: flex; flex-direction: column;
-  transform: translateX(-100%);
+  transform: translateX(100%);
   transition: transform .22s ease;
 }
-#summary-panel.open { transform: translateX(0); }
-.sp-header {
+#analysis-panel.open { transform: translateX(0); }
+.ap-header {
   padding: 13px 16px 11px;
   border-bottom: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between;
   flex-shrink: 0;
 }
-.sp-title { font-size: 13px; font-weight: 700; color: var(--text); }
-.sp-close {
+.ap-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.ap-close {
   background: none; border: none; cursor: pointer;
   font-size: 15px; color: var(--text3); padding: 0; line-height: 1;
 }
-.sp-close:hover { color: var(--text); }
-.sp-body { flex: 1; overflow-y: auto; padding: 14px; }
+.ap-close:hover { color: var(--text); }
+.ap-tabs {
+  display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.ap-tab {
+  flex: 1; padding: 8px 12px; background: none; border: none;
+  font-size: 11px; font-weight: 600; color: var(--text3);
+  cursor: pointer; border-bottom: 2px solid transparent;
+  transition: color .15s, border-color .15s;
+}
+.ap-tab:hover { color: var(--text); }
+.ap-tab.active { color: var(--action6); border-bottom-color: var(--action6); }
+.ap-pane { flex: 1; overflow-y: auto; padding: 14px; }
 .sp-intro {
   font-size: 12px; color: var(--text2); line-height: 1.6;
   padding: 10px 12px; background: var(--action6-lo);
@@ -439,31 +450,7 @@ body.present-mode #pres-bar { display: flex; }
 .sp-rel-to   { font-weight: 600; color: var(--text);    font-family: 'SFMono-Regular', Consolas, monospace; }
 .sp-rel-col  { font-size: 10px; color: var(--text3); margin-top: 2px; }
 
-/* ── Schema Health panel ── */
-#health-panel {
-  position: fixed; top: 92px; right: 0; bottom: 0;
-  width: 290px; z-index: 100;
-  background: var(--white);
-  border-left: 1px solid var(--border);
-  box-shadow: -4px 0 16px rgba(15,27,39,.10);
-  display: flex; flex-direction: column;
-  transform: translateX(100%);
-  transition: transform .22s ease;
-}
-#health-panel.open { transform: translateX(0); }
-.hp-header {
-  padding: 13px 16px 11px;
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-  flex-shrink: 0;
-}
-.hp-title { font-size: 13px; font-weight: 700; color: var(--text); }
-.hp-close {
-  background: none; border: none; cursor: pointer;
-  font-size: 15px; color: var(--text3); padding: 0; line-height: 1;
-}
-.hp-close:hover { color: var(--text); }
-.hp-body { flex: 1; overflow-y: auto; padding: 12px 14px; }
+/* ── kept for health content styles ── */
 .hp-section { margin-bottom: 14px; }
 .hp-section-title {
   font-size: 10px; font-weight: 700; text-transform: uppercase;
@@ -553,10 +540,9 @@ body.present-mode #pres-bar { display: flex; }
     <div class="hstat"><b>__REL_COUNT__</b> <span data-i18n="hstat-rels">relaciones</span></div>
     <div class="sep"></div>
     <button class="hbtn" data-i18n="btn-present" onclick="startPresentation()">&#9654; Presentar</button>
-    <button class="hbtn" data-i18n="btn-summary" onclick="toggleSummaryPanel()">&#128218; Resumen</button>
     <button class="hbtn" data-i18n="btn-reset" onclick="resetLayout()">&#8635; Restablecer</button>
     <button class="hbtn" data-i18n="btn-fit" onclick="fitView()">&#8862; Ajustar</button>
-    <button class="hbtn" data-i18n="btn-health" id="health-btn" onclick="toggleHealthPanel()">&#9874; Salud del esquema</button>
+    <button class="hbtn" data-i18n="btn-analysis" id="analysis-btn" onclick="toggleAnalysisPanel('summary')">&#128202; Análisis</button>
     <button class="hbtn" data-i18n="btn-ddl"    onclick="exportDDL()">&#128196; Exportar DDL</button>
     <button class="hbtn" data-i18n="btn-export" onclick="exportPNG()">&#8659; Exportar PNG</button>
     <button class="hbtn" id="lang-btn" onclick="toggleLang()">&#127468;&#127463; English</button>
@@ -610,20 +596,17 @@ body.present-mode #pres-bar { display: flex; }
   </div>
 </div>
 
-<div id="summary-panel">
-  <div class="sp-header">
-    <span class="sp-title" data-i18n="sum-title">Resumen del dominio</span>
-    <button class="sp-close" onclick="toggleSummaryPanel()">&#10005;</button>
+<div id="analysis-panel">
+  <div class="ap-header">
+    <span class="ap-title" data-i18n="ap-title">&#128202; Análisis</span>
+    <button class="ap-close" onclick="toggleAnalysisPanel()">&#10005;</button>
   </div>
-  <div class="sp-body" id="sp-body"></div>
-</div>
-
-<div id="health-panel">
-  <div class="hp-header">
-    <span class="hp-title" data-i18n="hp-title">&#9874; Salud del esquema</span>
-    <button class="hp-close" onclick="toggleHealthPanel()">&#10005;</button>
+  <div class="ap-tabs">
+    <button class="ap-tab active" id="tab-summary" data-i18n="tab-summary" onclick="switchTab('summary')">Resumen</button>
+    <button class="ap-tab" id="tab-health" data-i18n="tab-health" onclick="switchTab('health')">Salud del esquema</button>
   </div>
-  <div class="hp-body" id="hp-body"></div>
+  <div class="ap-pane" id="ap-summary-body"></div>
+  <div class="ap-pane" id="ap-health-body" style="display:none"></div>
 </div>
 
 <div id="tip"></div>
@@ -654,19 +637,20 @@ const I18N = {
     'hstat-rels':    { es: 'relaciones',                en: 'relationships' },
     'btn-reset':     { es: '&#8635; Restablecer',       en: '&#8635; Reset' },
     'btn-fit':       { es: '&#8862; Ajustar',           en: '&#8862; Fit' },
-    'btn-health':    { es: '&#9874; Salud del esquema', en: '&#9874; Schema Health' },
-    'btn-export':    { es: '&#8659; Exportar PNG',      en: '&#8659; Export PNG' },
-    'btn-ddl':       { es: '&#128196; Exportar DDL',   en: '&#128196; Export DDL' },
-    'legend-title':  { es: 'Leyenda',                   en: 'Legend' },
-    'legend-table':  { es: 'Tabla',                     en: 'Table' },
-    'legend-pk':     { es: 'Clave primaria',            en: 'Primary key' },
-    'legend-fk':      { es: 'FK inferida',               en: 'Inferred FK' },
-    'legend-quality': { es: 'Calidad de datos',          en: 'Data quality' },
-    'hp-title':      { es: '&#9874; Salud del esquema', en: '&#9874; Schema Health' },
+    'btn-analysis':  { es: '&#128202; Análisis',         en: '&#128202; Analysis' },
+    'btn-export':    { es: '&#8659; Exportar PNG',       en: '&#8659; Export PNG' },
+    'btn-ddl':       { es: '&#128196; Exportar DDL',    en: '&#128196; Export DDL' },
+    'legend-title':  { es: 'Leyenda',                    en: 'Legend' },
+    'legend-table':  { es: 'Tabla',                      en: 'Table' },
+    'legend-pk':     { es: 'Clave primaria',             en: 'Primary key' },
+    'legend-fk':      { es: 'FK inferida',                en: 'Inferred FK' },
+    'legend-quality': { es: 'Calidad de datos',           en: 'Data quality' },
+    'ap-title':      { es: '&#128202; Análisis',         en: '&#128202; Analysis' },
+    'tab-summary':   { es: 'Resumen',                    en: 'Summary' },
+    'tab-health':    { es: 'Salud del esquema',          en: 'Schema Health' },
     'hp-empty':      { es: '&#10003; Sin problemas detectados', en: '&#10003; No issues found' },
     'exporting':         { es: 'Exportando…',             en: 'Exporting…' },
     'btn-present':       { es: '&#9654; Presentar',         en: '&#9654; Present' },
-    'btn-summary':       { es: '&#128218; Resumen',        en: '&#128218; Summary' },
     'pres-prev':         { es: '&#8592; Anterior',         en: '&#8592; Previous' },
     'pres-next':         { es: 'Siguiente &#8594;',        en: 'Next &#8594;' },
     'pres-exit':         { es: '&#10005; Salir',           en: '&#10005; Exit' },
@@ -772,7 +756,7 @@ function shortDesc(desc) {
 }
 
 function renderSummaryPanel() {
-  const body = document.getElementById('sp-body');
+  const body = document.getElementById('ap-summary-body');
   const nt = DATA.tables.length, nr = DATA.relationships.length;
 
   // Connection count per table
@@ -829,8 +813,27 @@ function renderSummaryPanel() {
   body.innerHTML = html;
 }
 
-function toggleSummaryPanel() {
-  document.getElementById('summary-panel').classList.toggle('open');
+let ACTIVE_TAB = 'summary';
+
+function toggleAnalysisPanel(tab) {
+  const panel = document.getElementById('analysis-panel');
+  const isOpen = panel.classList.contains('open');
+  if (!isOpen) {
+    panel.classList.add('open');
+    switchTab(tab || ACTIVE_TAB);
+  } else if (!tab || tab === ACTIVE_TAB) {
+    panel.classList.remove('open');
+  } else {
+    switchTab(tab);
+  }
+}
+
+function switchTab(tab) {
+  ACTIVE_TAB = tab;
+  document.getElementById('ap-summary-body').style.display = tab === 'summary' ? '' : 'none';
+  document.getElementById('ap-health-body').style.display  = tab === 'health'  ? '' : 'none';
+  document.getElementById('tab-summary').classList.toggle('active', tab === 'summary');
+  document.getElementById('tab-health').classList.toggle('active',  tab === 'health');
 }
 
 /* ── Lookup structures ── */
@@ -1280,13 +1283,13 @@ function buildIssues() {
 
 function renderHealthPanel() {
   const issues = buildIssues();
-  const body   = document.getElementById('hp-body');
-  const btn    = document.getElementById('health-btn');
+  const body   = document.getElementById('ap-health-body');
+  const btn    = document.getElementById('analysis-btn');
   const GROUPS = ['no-pk', 'no-rel', 'unverified', 'no-desc'];
 
   // Update button badge
   const badge = `<span style="background:rgba(245,158,11,.3);border-radius:8px;padding:1px 6px;font-size:10px">${issues.length}</span>`;
-  btn.innerHTML = issues.length > 0 ? `${ts('btn-health')} ${badge}` : ts('btn-health');
+  btn.innerHTML = issues.length > 0 ? `${ts('btn-analysis')} ${badge}` : ts('btn-analysis');
 
   if (issues.length === 0) {
     body.innerHTML = `<div class="hp-empty"><span class="hp-ok">&#10003;</span>${ts('hp-empty')}</div>`;
@@ -1313,9 +1316,6 @@ function renderHealthPanel() {
   body.innerHTML = html;
 }
 
-function toggleHealthPanel() {
-  document.getElementById('health-panel').classList.toggle('open');
-}
 
 /* ── Bootstrap ── */
 computeLayout();

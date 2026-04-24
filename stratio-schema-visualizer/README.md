@@ -94,23 +94,24 @@ Debajo de la cabecera, cuatro toggles aplican cambios en tiempo real sin recarga
 | **Descripciones** | Activa/desactiva los tooltips de governance al hacer hover |
 | **Relaciones sin verificar** | Muestra/oculta las flechas con cardinalidad `?` |
 
-### Panel Schema Health (⚕)
-Panel lateral derecho con avisos automáticos sobre la calidad del modelo de datos, agrupados por categoría:
+### Panel Análisis (📊)
+Panel lateral derecho unificado que agrupa en dos pestañas toda la información sobre el dominio. El botón muestra un badge naranja con el número total de avisos de salud.
 
-- **Clave primaria ausente** — tablas sin ninguna columna PK definida
-- **Tablas aisladas** — tablas sin ninguna relación detectada
-- **Cardinalidad no verificada** — relaciones cuya query SQL no pudo ejecutarse
-- **Descripciones de governance ausentes** — columnas sin descripción en el catálogo
-
-El botón de la cabecera muestra el número total de avisos como badge naranja.
-
-### Panel Resumen del dominio (📖)
-Panel lateral izquierdo generado automáticamente a partir de la metadata de governance ya recuperada, sin llamadas adicionales:
+#### Pestaña Resumen
+Generada automáticamente a partir de la metadata de governance ya recuperada, sin llamadas adicionales:
 
 - **Párrafo introductorio** — número de entidades y relaciones del dominio
 - **Entidad central** — tabla con más conexiones, con su descripción de governance
 - **Lista de entidades** — todas las tablas con su primera frase descriptiva
 - **Mapa de relaciones** — listado de `tabla_origen → tabla_destino` con la columna de enlace
+
+#### Pestaña Salud del esquema
+Avisos automáticos sobre la calidad del modelo de datos, agrupados por categoría:
+
+- **Clave primaria ausente** — tablas sin ninguna columna PK definida
+- **Tablas aisladas** — tablas sin ninguna relación detectada
+- **Cardinalidad no verificada** — relaciones cuya query SQL no pudo ejecutarse
+- **Descripciones de governance ausentes** — columnas sin descripción en el catálogo
 
 ### Modo presentación (▶)
 Walkthrough paso a paso del modelo, pensado para explicar el esquema a una audiencia:
@@ -140,10 +141,9 @@ Toda la interfaz — cabecera, botones, filtros, leyenda, paneles y modo present
 | Botón / Acción | Función |
 |----------------|---------|
 | ▶ Presentar | Activa el modo presentación paso a paso |
-| 📖 Resumen | Abre el panel de resumen del dominio (izquierda) |
 | ↺ Restablecer | Vuelve al layout automático inicial |
 | ⊞ Ajustar | Encaja el diagrama completo en la ventana |
-| ⚕ Salud del esquema | Abre el panel de avisos del modelo (derecha) |
+| 📊 Análisis | Abre el panel lateral derecho con pestañas Resumen y Salud del esquema |
 | 📄 Exportar DDL | Descarga `schema_<dominio>.sql` |
 | ⬇ Exportar PNG | Descarga captura PNG en alta resolución |
 | 🇬🇧 / 🇪🇸 | Alterna el idioma de la interfaz |
