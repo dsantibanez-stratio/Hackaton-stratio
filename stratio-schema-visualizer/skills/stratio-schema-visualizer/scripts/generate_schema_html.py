@@ -253,6 +253,12 @@ header {
 .quality-green  { background: rgba(34,197,94,.25);  color: #4ade80; }
 .quality-yellow { background: rgba(234,179,8,.25);  color: #facc15; }
 .quality-red    { background: rgba(239,68,68,.25);  color: #f87171; }
+.nm-badge {
+  font-size: 9px; font-weight: 700; letter-spacing: .4px;
+  padding: 1px 5px; border-radius: 4px; flex-shrink: 0;
+  background: rgba(139,92,246,.25); color: #c4b5fd;
+  cursor: default;
+}
 
 /* Column rows */
 .crow {
@@ -584,6 +590,7 @@ body.present-mode #pres-bar { display: flex; }
     </div>
     <span data-i18n="legend-quality">Calidad de datos</span>
   </div>
+  <div class="leg-row"><span class="nm-badge">N:M</span> <span data-i18n="legend-nm">Tabla intermedia</span></div>
 </div>
 
 <div id="pres-bar">
@@ -645,6 +652,8 @@ const I18N = {
     'legend-pk':     { es: 'Clave primaria',             en: 'Primary key' },
     'legend-fk':      { es: 'FK inferida',                en: 'Inferred FK' },
     'legend-quality': { es: 'Calidad de datos',           en: 'Data quality' },
+    'legend-nm':      { es: 'Tabla intermedia (N:M)',     en: 'Junction table (N:M)' },
+    'nm-tip':         { es: 'Tabla intermedia — implementa una relación N:M', en: 'Junction table — implements an N:M relationship' },
     'ap-title':      { es: '&#128202; Análisis',         en: '&#128202; Analysis' },
     'tab-summary':   { es: 'Resumen',                    en: 'Summary' },
     'tab-health':    { es: 'Salud del esquema',          en: 'Schema Health' },
@@ -881,6 +890,20 @@ function computeLayout() {
   svg.setAttribute('height', H);
 }
 
+/* ── Junction table detection ── */
+function detectJunctionTables() {
+  const junction = new Set();
+  DATA.tables.forEach(t => {
+    const fks = DATA.relationships.filter(r => r.from_table === t.name);
+    const targetTables = new Set(fks.map(r => r.to_table));
+    if (targetTables.size < 2) return;
+    const nonKeyCols = t.columns.filter(c => !c.is_primary_key && !fkCols[t.name].has(c.name)).length;
+    if (nonKeyCols <= 2) junction.add(t.name);
+  });
+  return junction;
+}
+const JUNCTION_TABLES = detectJunctionTables();
+
 /* ── Render cards ── */
 function renderCards() {
   canvas.querySelectorAll('.tcard').forEach(e => e.remove());
@@ -896,14 +919,25 @@ function renderCards() {
     const qBadge = qScore != null
       ? `<span class="quality-badge ${qScore >= 80 ? 'quality-green' : qScore >= 40 ? 'quality-yellow' : 'quality-red'}">${qScore}%</span>`
       : '';
+    const nmBadge = JUNCTION_TABLES.has(t.name) ? `<span class="nm-badge">N:M</span>` : '';
     hdr.innerHTML = `<span class="thead-icon">&#9634;</span>
       <span class="thead-name">${esc(t.name)}</span>
+      ${nmBadge}
       ${qBadge}
       <span class="thead-count">${t.columns.length}</span>`;
     card.appendChild(hdr);
     if (qScore != null) {
       const badgeEl = hdr.querySelector('.quality-badge');
       if (badgeEl) attachQualityTooltip(badgeEl, qScore);
+    }
+    if (JUNCTION_TABLES.has(t.name)) {
+      const nmEl = hdr.querySelector('.nm-badge');
+      if (nmEl) {
+        nmEl.title = ts('nm-tip');
+        nmEl.addEventListener('mouseenter', e => { tip.textContent = ts('nm-tip'); tip.style.display = 'block'; moveTooltip(e); });
+        nmEl.addEventListener('mousemove',  e => moveTooltip(e));
+        nmEl.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+      }
     }
 
     /* columns */
