@@ -174,6 +174,34 @@ header {
   color: var(--white);
 }
 
+/* ── View selector ── */
+.view-sel {
+  display: flex;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.view-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,.6);
+  padding: 5px 12px;
+  font-size: 12px; cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  transition: background .15s, color .15s;
+}
+.view-btn.active {
+  background: var(--action6);
+  color: var(--white);
+}
+.view-btn:hover:not(.active) {
+  background: rgba(255,255,255,.12);
+  color: var(--white);
+}
+
 /* ── Canvas wrap ── */
 #wrap {
   flex: 1; overflow: auto; position: relative;
@@ -540,10 +568,14 @@ body.present-mode #pres-bar { display: flex; }
   <div class="header-title"><span data-i18n="header-prefix">Esquema relacional</span> · __DOMAIN_LABEL__</div>
   <div class="header-divider"></div>
   <div class="domain-chip">__DOMAIN__</div>
+  <div id="view-selector" class="view-sel" style="display:none">
+    <button class="view-btn" data-view="tech" data-i18n="view-tech" onclick="switchView('tech')">Técnico</button>
+    <button class="view-btn" data-view="sem"  data-i18n="view-sem"  onclick="switchView('sem')">Semántico</button>
+  </div>
   <div class="hstats">
-    <div class="hstat"><b>__TABLE_COUNT__</b> <span data-i18n="hstat-tables">tablas</span></div>
-    <div class="hstat"><b>__COL_COUNT__</b> <span data-i18n="hstat-cols">columnas</span></div>
-    <div class="hstat"><b>__REL_COUNT__</b> <span data-i18n="hstat-rels">relaciones</span></div>
+    <div class="hstat"><b id="hstat-ntables">__TABLE_COUNT__</b> <span data-i18n="hstat-tables">tablas</span></div>
+    <div class="hstat"><b id="hstat-ncols">__COL_COUNT__</b> <span data-i18n="hstat-cols">columnas</span></div>
+    <div class="hstat"><b id="hstat-nrels">__REL_COUNT__</b> <span data-i18n="hstat-rels">relaciones</span></div>
     <div class="sep"></div>
     <button class="hbtn" data-i18n="btn-present" onclick="startPresentation()">&#9654; Presentar</button>
     <button class="hbtn" data-i18n="btn-reset" onclick="resetLayout()">&#8635; Restablecer</button>
@@ -619,7 +651,11 @@ body.present-mode #pres-bar { display: flex; }
 <div id="tip"></div>
 
 <script>
-const DATA   = __DATA_JSON__;
+const DATA_TECH     = __DATA_JSON_TECH__;
+const DATA_SEM      = __DATA_JSON_SEM__;
+const HAS_SEMANTIC  = __HAS_SEMANTIC__;
+let ACTIVE_VIEW = HAS_SEMANTIC ? 'sem' : 'tech';
+let DATA = HAS_SEMANTIC ? DATA_SEM : DATA_TECH;
 const CARD_W = 240;
 const HEAD_H = 36;
 const ROW_H  = 26;
@@ -671,6 +707,8 @@ const I18N = {
     'sum-connections':   { es: 'conexiones',              en: 'connections' },
     'sum-no-desc':       { es: 'Sin descripción de governance.', en: 'No governance description.' },
     'sum-via':           { es: 'vía',                     en: 'via' },
+    'view-tech':         { es: 'Técnico',                 en: 'Technical' },
+    'view-sem':          { es: 'Semántico',               en: 'Semantic' },
     'filter-label':      { es: 'Mostrar:',               en: 'Show:' },
     'filter-types':      { es: 'Tipos de dato',          en: 'Data types' },
     'filter-nonkey':     { es: 'Columnas no clave',      en: 'Non-key columns' },
@@ -845,20 +883,50 @@ function switchTab(tab) {
   document.getElementById('tab-health').classList.toggle('active',  tab === 'health');
 }
 
-/* ── Lookup structures ── */
-const byName = {};
-const colIdx = {};
-const fkCols = {};
+/* ── View switching ── */
+function updateHeaderStats() {
+  const ncols = DATA.tables.reduce((s, t) => s + t.columns.length, 0);
+  document.getElementById('hstat-ntables').textContent = DATA.tables.length;
+  document.getElementById('hstat-ncols').textContent   = ncols;
+  document.getElementById('hstat-nrels').textContent   = DATA.relationships.length;
+}
 
-DATA.tables.forEach(t => {
-  byName[t.name] = t;
-  colIdx[t.name] = {};
-  fkCols[t.name] = new Set();
-  t.columns.forEach((c, i) => { colIdx[t.name][c.name] = i; });
-});
-DATA.relationships.forEach(r => {
-  if (fkCols[r.from_table]) fkCols[r.from_table].add(r.from_column);
-});
+function switchView(v) {
+  if (v === ACTIVE_VIEW) return;
+  if (PRES.active) exitPresentation();
+  ACTIVE_VIEW = v;
+  DATA = ACTIVE_VIEW === 'sem' ? DATA_SEM : DATA_TECH;
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+  rebuildLookups();
+  resetLayout();
+  renderHealthPanel();
+  renderSummaryPanel();
+  updateHeaderStats();
+}
+
+/* ── Lookup structures ── */
+let byName = {};
+let colIdx = {};
+let fkCols = {};
+let JUNCTION_TABLES = new Set();
+
+function rebuildLookups() {
+  byName = {};
+  colIdx = {};
+  fkCols = {};
+  DATA.tables.forEach(t => {
+    byName[t.name] = t;
+    colIdx[t.name] = {};
+    fkCols[t.name] = new Set();
+    t.columns.forEach((c, i) => { colIdx[t.name][c.name] = i; });
+  });
+  DATA.relationships.forEach(r => {
+    if (fkCols[r.from_table]) fkCols[r.from_table].add(r.from_column);
+  });
+  JUNCTION_TABLES = detectJunctionTables();
+}
+
+rebuildLookups();
 
 /* ── Positions ── */
 const pos = {};
@@ -902,7 +970,6 @@ function detectJunctionTables() {
   });
   return junction;
 }
-const JUNCTION_TABLES = detectJunctionTables();
 
 /* ── Render cards ── */
 function renderCards() {
@@ -975,8 +1042,8 @@ function typeClass(t) {
 
 /* ── Tooltip ── */
 function attachQualityTooltip(el, score) {
-  el.addEventListener('mouseenter', e => { tip.textContent = td('quality-tip', { score }); tip.style.display = 'block'; moveTooltip(e); });
-  el.addEventListener('mousemove',  moveTooltip);
+  el.addEventListener('mouseenter', e => { if (!FILTERS.descs) return; tip.textContent = td('quality-tip', { score }); tip.style.display = 'block'; moveTooltip(e); });
+  el.addEventListener('mousemove',  e => { if (FILTERS.descs) moveTooltip(e); });
   el.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
 }
 
@@ -1357,6 +1424,11 @@ renderCards();
 drawArrows();
 renderHealthPanel();
 renderSummaryPanel();
+if (HAS_SEMANTIC) {
+  const vs = document.getElementById('view-selector');
+  vs.style.display = 'flex';
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === ACTIVE_VIEW));
+}
 
 /* ── Export DDL ── */
 function exportDDL() {
@@ -1456,44 +1528,61 @@ function exportPNG() {
 
 def main():
     parser = argparse.ArgumentParser(description="Stratio Schema Visualizer HTML generator")
-    parser.add_argument("--input",  required=True, help="Input JSON data file")
-    parser.add_argument("--output", required=True, help="Output HTML file")
+    parser.add_argument("--input",          required=True,  help="Input JSON (technical domain)")
+    parser.add_argument("--input-semantic", required=False, default=None, help="Input JSON for semantic domain view (optional)")
+    parser.add_argument("--output",         required=True,  help="Output HTML file")
     args = parser.parse_args()
 
     with open(args.input, encoding="utf-8") as f:
-        data = json.load(f)
+        data_tech = json.load(f)
 
-    if not data.get("relationships"):
-        data["relationships"] = infer_relationships(data["tables"])
+    if not data_tech.get("relationships"):
+        data_tech["relationships"] = infer_relationships(data_tech["tables"])
+    if not data_tech.get("generated_at"):
+        data_tech["generated_at"] = datetime.now().isoformat(timespec="seconds")
 
-    if not data.get("generated_at"):
-        data["generated_at"] = datetime.now().isoformat(timespec="seconds")
+    has_semantic = args.input_semantic is not None
+    if has_semantic:
+        with open(args.input_semantic, encoding="utf-8") as f:
+            data_sem = json.load(f)
+        if not data_sem.get("relationships"):
+            data_sem["relationships"] = infer_relationships(data_sem["tables"])
+        if not data_sem.get("generated_at"):
+            data_sem["generated_at"] = datetime.now().isoformat(timespec="seconds")
+    else:
+        data_sem = data_tech
 
-    ntables = len(data["tables"])
-    ncols   = total_columns(data["tables"])
-    nrels   = len(data.get("relationships", []))
+    data = data_tech
+    ntables = len(data_tech["tables"])
+    ncols   = total_columns(data_tech["tables"])
+    nrels   = len(data_tech.get("relationships", []))
 
     logo_src = "data:image/png;base64," + LOGO_B64
-
     domain_label = data["domain"].replace("_", " ").replace("-", " ").title()
 
     html = TEMPLATE
-    html = html.replace("__DATA_JSON__",    json.dumps(data, ensure_ascii=False, indent=2))
-    html = html.replace("__DOMAIN__",       data["domain"])
-    html = html.replace("__DOMAIN_LABEL__", domain_label)
-    html = html.replace("__TABLE_COUNT__",  str(ntables))
-    html = html.replace("__COL_COUNT__",    str(ncols))
-    html = html.replace("__REL_COUNT__",    str(nrels))
-    html = html.replace("__LOGO_SRC__",     logo_src)
+    html = html.replace("__DATA_JSON_TECH__", json.dumps(data_tech, ensure_ascii=False, indent=2))
+    html = html.replace("__DATA_JSON_SEM__",  json.dumps(data_sem,  ensure_ascii=False, indent=2))
+    html = html.replace("__HAS_SEMANTIC__",   "true" if has_semantic else "false")
+    html = html.replace("__DOMAIN__",         data["domain"])
+    html = html.replace("__DOMAIN_LABEL__",   domain_label)
+    html = html.replace("__TABLE_COUNT__",    str(ntables))
+    html = html.replace("__COL_COUNT__",      str(ncols))
+    html = html.replace("__REL_COUNT__",      str(nrels))
+    html = html.replace("__LOGO_SRC__",       logo_src)
 
     with open(args.output, "w", encoding="utf-8") as f:
         f.write(html)
 
     print(f"\u2713  Written to: {args.output}")
-    print(f"   Domain      : {data['domain']}")
-    print(f"   Tables      : {ntables}")
-    print(f"   Columns     : {ncols}")
-    print(f"   Relationships: {nrels}")
+    print(f"   Domain (tech)  : {data_tech['domain']}")
+    if has_semantic:
+        print(f"   Domain (sem)   : {data_sem['domain']}")
+        print(f"   Tables (tech)  : {ntables}  |  Tables (sem): {len(data_sem['tables'])}")
+    else:
+        print(f"   Tables         : {ntables}")
+    print(f"   Columns        : {ncols}")
+    print(f"   Relationships  : {nrels}")
 
 
 if __name__ == "__main__":

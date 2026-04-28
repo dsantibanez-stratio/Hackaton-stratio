@@ -11,6 +11,13 @@ La skill sigue un flujo automático cada vez que se invoca. El usuario solo tien
 ### 1. Identificación del dominio
 Si el usuario no especifica el dominio, la skill lista los disponibles y espera a que elija uno. Si da un nombre parcial, busca la coincidencia más probable y confirma antes de continuar.
 
+### 1b. Derivación del dominio complementario
+Una vez identificado el dominio, la skill deriva automáticamente su contraparte:
+- Si el nombre empieza por `semantic_`, el dominio técnico es el mismo sin ese prefijo
+- Si no empieza por `semantic_`, el dominio semántico es el mismo con ese prefijo
+
+Si el dominio complementario existe, se generan **dos vistas** en el HTML final (selector Técnico / Semántico). Si no existe, se genera una sola vista.
+
 ### 2. Recopilación de metadatos
 Se invocan en paralelo tres llamadas al MCP de Stratio:
 - `list_domain_tables` — lista de tablas autorizadas
@@ -26,7 +33,9 @@ La skill detecta relaciones candidatas por convención de nomenclatura:
 - `<prefijo>_ref` cuyo prefijo coincide con el segmento final de otra tabla (`fac_ref` → `tbl_fac`)
 
 ### 3b. Verificación de cardinalidad con datos reales
-Por cada relación candidata se ejecuta una query SQL real:
+La verificación SQL **solo se ejecuta sobre el dominio semántico**. El dominio técnico no permite acceso SQL; todas sus cardinalidades se marcan como `?`.
+
+Por cada relación candidata del dominio semántico se ejecuta una query SQL real usando el nombre de tabla calificado con el dominio (p. ej. `FROM semantic_demo_health.visitas`):
 
 ```sql
 SELECT COUNT(*) AS total_rows, COUNT(DISTINCT <columna_fk>) AS distinct_vals
@@ -48,6 +57,16 @@ Se ejecuta `scripts/generate_schema_html.py`, que produce un fichero HTML comple
 
 ## Qué muestra el diagrama
 
+### Selector de vista (Técnico / Semántico)
+Cuando tanto el dominio técnico como el semántico están disponibles, aparece un control segmentado en la barra de cabecera que permite cambiar de vista en tiempo real:
+
+| Vista | Contenido | Cardinalidad | Calidad |
+|-------|-----------|-------------|---------|
+| **Técnico** | Tablas físicas del dominio técnico | `?` (sin acceso SQL) | Sin badge |
+| **Semántico** | Vistas de negocio del dominio semántico | `1:1` / `N:1` verificadas con SQL | Badge color-coded si el dominio tiene reglas de calidad configuradas |
+
+Cambiar de vista actualiza instantáneamente las tarjetas, flechas, estadísticas de cabecera, panel de Análisis y panel de Salud del esquema. Todos los demás controles (filtros, modo presentación, exportaciones, i18n) funcionan igual en ambas vistas.
+
 ### Cabecera
 La cabecera identifica el dominio visualizado con el título **"Esquema relacional · \<Nombre de la colección\>"** junto al chip con el nombre técnico del dominio. También muestra el recuento de tablas, columnas y relaciones del esquema.
 
@@ -65,7 +84,7 @@ Cada tabla aparece como una tarjeta arrastrable con:
 | 🔴 Rojo | `DATE`, `TIMESTAMP`, `DATETIME` |
 
 ### Badge de calidad de datos
-Aparece en la cabecera de cada tarjeta cuando el dominio expone datos de calidad:
+Aparece en la cabecera de cada tarjeta en la vista semántica cuando el dominio tiene reglas de calidad configuradas y ejecutadas (p. ej. `semantic_demo_health`):
 
 | Color | Rango | Significado |
 |-------|-------|-------------|
@@ -73,7 +92,7 @@ Aparece en la cabecera de cada tarjeta cuando el dominio expone datos de calidad
 | 🟡 Amarillo | 40 – 79 % | Calidad media |
 | 🔴 Rojo | < 40 % | Calidad baja |
 
-Al pasar el cursor sobre el badge aparece un tooltip: *"Calidad de datos: X%"*. La leyenda del diagrama también explica la escala de colores.
+Al pasar el cursor sobre el badge aparece un tooltip: *"Calidad de datos: X%"*. Este tooltip respeta el toggle **Descripciones** — si está desactivado, el tooltip no aparece. La leyenda del diagrama también explica la escala de colores.
 
 ### Flechas de relación
 Curvas bézier que conectan exactamente la columna FK de origen con la columna de destino, con:
@@ -140,16 +159,17 @@ Toda la interfaz — cabecera, botones, filtros, leyenda, paneles y modo present
 
 | Botón / Acción | Función |
 |----------------|---------|
+| Técnico / Semántico | Alterna entre la vista física y la vista semántica |
 | ▶ Presentar | Activa el modo presentación paso a paso |
 | ↺ Restablecer | Vuelve al layout automático inicial |
-| ⊞ Ajustar | Encaja el diagrama completo en la ventana |
+| ⊞ Ajustar | Encaja y centra el diagrama completo en la ventana actual |
 | 📊 Análisis | Abre el panel lateral derecho con pestañas Resumen y Salud del esquema |
 | 📄 Exportar DDL | Descarga `schema_<dominio>.sql` |
 | ⬇ Exportar PNG | Descarga captura PNG en alta resolución |
 | 🇬🇧 / 🇪🇸 | Alterna el idioma de la interfaz |
 | Arrastrar tarjeta | Reposiciona la tabla en el canvas |
-| Hover sobre columna | Muestra descripción de governance (si activo) |
-| Hover sobre badge `%` | Muestra el score de calidad de datos |
+| Hover sobre columna | Muestra descripción de governance (si el toggle Descripciones está activo) |
+| Hover sobre badge `%` | Muestra el score de calidad de datos (si el toggle Descripciones está activo) |
 | Hover sobre flecha | Resalta las columnas conectadas |
 
 ---
