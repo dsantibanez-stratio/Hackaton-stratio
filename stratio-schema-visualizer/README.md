@@ -9,7 +9,7 @@ Skill de Claude Code que genera un **diagrama ER interactivo** a partir de los m
 La skill sigue un flujo automático cada vez que se invoca. El usuario solo tiene que indicar el nombre del dominio.
 
 ### 1. Identificación del dominio
-Si el usuario no especifica el dominio, la skill lista los disponibles y espera a que elija uno. Si da un nombre parcial, busca la coincidencia más probable y confirma antes de continuar.
+Si el usuario no especifica el dominio, la skill invoca `list_domains` y presenta la lista para que elija. Si da un nombre parcial, invoca `search_domains` para encontrar la coincidencia más probable y confirma antes de continuar.
 
 ### 1b. Derivación del dominio complementario
 Una vez identificado el dominio, la skill deriva automáticamente su contraparte:
@@ -19,7 +19,7 @@ Una vez identificado el dominio, la skill deriva automáticamente su contraparte
 Si el dominio complementario existe, se generan **dos vistas** en el HTML final (selector Técnico / Semántico). Si no existe, se genera una sola vista.
 
 ### 2. Recopilación de metadatos
-Se invocan en paralelo tres llamadas al MCP de Stratio:
+Se invocan en paralelo tres llamadas al MCP de Stratio (para cada uno de los dos dominios):
 - `list_domain_tables` — lista de tablas autorizadas
 - `get_tables_details` — descripciones de negocio y contexto de governance
 - `get_tables_quality_details` — score de calidad de datos por tabla (0–100)
@@ -189,6 +189,20 @@ Las relaciones muchos-a-muchos implementadas mediante tabla intermedia se muestr
 Las tablas a las que el usuario no tiene acceso se omiten del diagrama y se indica cuáles fueron al finalizar.
 
 ---
+
+## Tools MCP utilizadas
+
+La skill invoca 7 tools del MCP `StratioData` a lo largo de su flujo:
+
+| Tool | Fase | Propósito |
+|------|------|-----------|
+| `list_domains` | Identificación | Lista todos los dominios disponibles si el usuario no especifica uno |
+| `search_domains` | Identificación | Busca un dominio por nombre parcial o palabra clave |
+| `list_domain_tables` | Metadatos | Lista las tablas autorizadas de un dominio |
+| `get_tables_details` | Metadatos | Descripciones de negocio y contexto de governance por tabla |
+| `get_tables_quality_details` | Metadatos | Score de calidad de datos por tabla (0–100) |
+| `get_table_columns_details` | Metadatos | Columnas, tipos de dato y descripciones de governance |
+| `execute_sql` | Cardinalidad | Queries SQL reales para verificar si cada relación FK es 1:1 o N:1 (solo dominio semántico) |
 
 ## Requisitos técnicos
 
